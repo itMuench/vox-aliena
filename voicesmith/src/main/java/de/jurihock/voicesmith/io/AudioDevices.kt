@@ -37,7 +37,8 @@ fun AudioManager.getAudioDevices(flags: Int, types: Map<Int, String>) : List<Aud
       .map { device ->
         AudioDevice(
           device.id,
-          listOf(types.getValue(device.type), device.address)
+          listOf(types.getOrDefault(device.type, device.productName),
+                 if (types.contains(device.type)) device.address else "#${device.id}")
             .filter { it.isNotEmpty() }
             .joinToString(" ")
             .uppercase(),
