@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
+import de.jurihock.voicesmith.etc.RecordingFilenameCharacters
 import kotlin.math.abs
 
 @Composable
@@ -41,6 +42,16 @@ fun SettingsScreen(modifier: Modifier = Modifier,
                    seconds: String,
                    intervalRangeText: String,
                    manualRangeText: String,
+                   filenameTitle: String,
+                   filenameLengthLabel: String,
+                   filenameDynamicLengthLabel: String,
+                   filenameMinLengthLabel: String,
+                   filenameMaxLengthLabel: String,
+                   filenameLengthRangeText: String,
+                   filenameCharactersTitle: String,
+                   filenameNumbersOnlyLabel: String,
+                   filenameLettersOnlyLabel: String,
+                   filenameAlphanumericLabel: String,
                    delay: State<Int>,
                    pitch: State<Double>,
                    pitchDynamic: State<Boolean>,
@@ -51,6 +62,11 @@ fun SettingsScreen(modifier: Modifier = Modifier,
                    timbreRange: State<Double>,
                    timbreInterval: State<Double>,
                    manualMode: State<Boolean>,
+                   filenameLength: State<Int>,
+                   filenameDynamicLength: State<Boolean>,
+                   filenameMinLength: State<Int>,
+                   filenameMaxLength: State<Int>,
+                   filenameCharacters: State<RecordingFilenameCharacters>,
                    onDelayChange: (value: Int) -> Unit,
                    onPitchChange: (value: Double) -> Unit,
                    onPitchDynamicChange: (dynamic: Boolean) -> Unit,
@@ -61,6 +77,11 @@ fun SettingsScreen(modifier: Modifier = Modifier,
                    onTimbreRangeChange: (value: Double) -> Unit,
                    onTimbreIntervalChange: (value: Double) -> Unit,
                    onModeChange: (manual: Boolean) -> Unit,
+                   onFilenameLengthChange: (value: Int) -> Unit,
+                   onFilenameDynamicLengthChange: (value: Boolean) -> Unit,
+                   onFilenameMinLengthChange: (value: Int) -> Unit,
+                   onFilenameMaxLengthChange: (value: Int) -> Unit,
+                   onFilenameCharactersChange: (value: RecordingFilenameCharacters) -> Unit,
                    onSave: () -> Unit) {
 
   val pitchMaxRange = (12.0 - abs(pitch.value)).coerceAtLeast(0.0)
@@ -171,6 +192,32 @@ fun SettingsScreen(modifier: Modifier = Modifier,
       onDynamicChange = onTimbreDynamicChange,
       onRangeChange = onTimbreRangeChange,
       onIntervalChange = onTimbreIntervalChange)
+
+    Spacer(modifier = Modifier.height(Dp(UI.PADDING * 2)))
+    HorizontalDivider(modifier = Modifier.fillMaxWidth())
+    Spacer(modifier = Modifier.height(Dp(UI.PADDING * 2)))
+
+    RecordingFilenameSettingsScreen(
+      title = filenameTitle,
+      lengthLabel = filenameLengthLabel,
+      dynamicLengthLabel = filenameDynamicLengthLabel,
+      minLengthLabel = filenameMinLengthLabel,
+      maxLengthLabel = filenameMaxLengthLabel,
+      lengthRangeText = filenameLengthRangeText,
+      charactersTitle = filenameCharactersTitle,
+      numbersOnlyLabel = filenameNumbersOnlyLabel,
+      lettersOnlyLabel = filenameLettersOnlyLabel,
+      alphanumericLabel = filenameAlphanumericLabel,
+      length = filenameLength,
+      dynamicLength = filenameDynamicLength,
+      minLength = filenameMinLength,
+      maxLength = filenameMaxLength,
+      characters = filenameCharacters,
+      onLengthChange = onFilenameLengthChange,
+      onDynamicLengthChange = onFilenameDynamicLengthChange,
+      onMinLengthChange = onFilenameMinLengthChange,
+      onMaxLengthChange = onFilenameMaxLengthChange,
+      onCharactersChange = onFilenameCharactersChange)
 
     Spacer(modifier = Modifier.height(Dp(UI.PADDING * 2)))
 
