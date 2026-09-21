@@ -13,6 +13,14 @@ target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:RELEASE>:-Ofast>)
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Werror)
 
+# NDK r27 and older do not produce 16 KB-aligned ELF LOAD segments by default.
+# Android 15+ devices may use 16 KB memory pages, so explicitly request the
+# alignment recommended by Android for CMake builds.
+# https://developer.android.com/guide/practices/page-sizes
+target_link_options(${PROJECT_NAME} PRIVATE
+  "-Wl,-z,max-page-size=16384"
+  "-Wl,-z,common-page-size=16384")
+
 include("${CMAKE_CURRENT_LIST_DIR}/libs/cpm.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/libs/eventpp.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/libs/fmt.cmake")
