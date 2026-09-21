@@ -33,9 +33,9 @@ void Mp3Recorder::start() {
   }
 
   failure = nullptr;
-  initialise();
 
   try {
+    initialise();
     running = true;
     thread = std::make_unique<std::thread>([&]() { loop(); });
   } catch (...) {

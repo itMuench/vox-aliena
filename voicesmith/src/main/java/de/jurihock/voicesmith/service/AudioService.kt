@@ -107,6 +107,7 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
     try {
       plugin?.stop()
     } catch (exception: Throwable) {
+      finishedRecording?.delete()
       Log.e(exception)
       throw exception
     } finally {
