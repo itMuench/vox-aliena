@@ -5,7 +5,9 @@
 #include <voicesmith/fx/AudioEffect.h>
 #include <voicesmith/io/AudioBlockQueue.h>
 
+extern "C" {
 #include <layer3.h>
+}
 
 #include <atomic>
 #include <exception>
