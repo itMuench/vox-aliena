@@ -14,7 +14,8 @@
 
 TestAudioPlugin::TestAudioPlugin(jna_callback* callback) :
   callback(callback) {
-  state.effects = std::make_shared<StereoChainEffect<DelayEffect, PitchTimbreShiftEffect>>();
+  state.liveEffects = std::make_shared<StereoChainEffect<DelayEffect, PitchTimbreShiftEffect>>();
+  state.recordingEffects = std::make_shared<StereoChainEffect<PitchTimbreShiftEffect>>();
 }
 
 TestAudioPlugin::~TestAudioPlugin() {
@@ -40,17 +41,25 @@ void TestAudioPlugin::setup(const std::optional<int> input,
 void TestAudioPlugin::set(const std::string& param,
                           const std::string& value) {
   if (param == "delay") {
-    state.effects->get<DelayEffect>([value](auto effect){
+    state.liveEffects->get<DelayEffect>([value](auto effect){
       effect->delay(value);
     });
   }
+
   if (param == "pitch") {
-    state.effects->get<PitchTimbreShiftEffect>([value](auto effect){
+    state.liveEffects->get<PitchTimbreShiftEffect>([value](auto effect){
+      effect->pitch(value);
+    });
+    state.recordingEffects->get<PitchTimbreShiftEffect>([value](auto effect){
       effect->pitch(value);
     });
   }
+
   if (param == "timbre") {
-    state.effects->get<PitchTimbreShiftEffect>([value](auto effect){
+    state.liveEffects->get<PitchTimbreShiftEffect>([value](auto effect){
+      effect->timbre(value);
+    });
+    state.recordingEffects->get<PitchTimbreShiftEffect>([value](auto effect){
       effect->timbre(value);
     });
   }
@@ -63,7 +72,7 @@ void TestAudioPlugin::start() {
 
   auto source = std::make_shared<AudioSource>(config.input, config.samplerate, config.blocksize, config.channels);
   auto sink = std::make_shared<AudioSink>(config.output, config.samplerate, config.blocksize, config.channels);
-  auto pipe = std::make_shared<AudioPipeline>(source, sink, state.effects);
+  auto pipe = std::make_shared<AudioPipeline>(source, sink, state.liveEffects);
 
   pipe->subscribe([&](const AudioEventCode code, const std::string& data){
     callback(!code, data.c_str());
@@ -107,7 +116,7 @@ void TestAudioPlugin::startRecording(const std::string& path) {
 
   auto recorder = std::make_shared<Mp3Recorder>(
     source->fifo(),
-    state.effects,
+    state.recordingEffects,
     path,
     samplerate,
     blocksize,
