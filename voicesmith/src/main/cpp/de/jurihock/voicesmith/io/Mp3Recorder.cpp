@@ -33,6 +33,7 @@ void Mp3Recorder::start() {
   }
 
   failure = nullptr;
+  currentLevel.store(0.f, std::memory_order_relaxed);
 
   try {
     initialise();
@@ -43,6 +44,10 @@ void Mp3Recorder::start() {
     cleanup();
     throw;
   }
+}
+
+float Mp3Recorder::level() const {
+  return currentLevel.load(std::memory_order_relaxed);
 }
 
 void Mp3Recorder::stop() {
@@ -123,6 +128,7 @@ void Mp3Recorder::loop() {
           input.copyto(processed);
         }
 
+        updateLevel(processed);
         append(processed);
         ++index;
       });
@@ -134,6 +140,23 @@ void Mp3Recorder::loop() {
   }
 
   cleanup();
+}
+
+void Mp3Recorder::updateLevel(const AudioBlock& block) {
+  const std::span<const float> samples = block;
+  if (samples.empty()) {
+    currentLevel.store(0.f, std::memory_order_relaxed);
+    return;
+  }
+
+  double sum = 0.0;
+  for (const auto sample : samples) {
+    const auto value = std::clamp(sample, -1.f, 1.f);
+    sum += static_cast<double>(value) * static_cast<double>(value);
+  }
+
+  const auto rms = static_cast<float>(std::sqrt(sum / samples.size()));
+  currentLevel.store(std::clamp(rms, 0.f, 1.f), std::memory_order_relaxed);
 }
 
 void Mp3Recorder::append(const AudioBlock& block) {
@@ -195,6 +218,7 @@ void Mp3Recorder::finish() {
 
 void Mp3Recorder::cleanup() {
   running = false;
+  currentLevel.store(0.f, std::memory_order_relaxed);
 
   if (encoder != nullptr) {
     shine_close(encoder);
