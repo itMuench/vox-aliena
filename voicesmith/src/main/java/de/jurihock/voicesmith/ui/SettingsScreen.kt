@@ -1,5 +1,6 @@
 package de.jurihock.voicesmith.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -68,6 +69,7 @@ fun SettingsScreen(modifier: Modifier = Modifier,
   Column(
     modifier = modifier
       .fillMaxSize()
+      .background(MaterialTheme.colorScheme.background)
       .verticalScroll(rememberScrollState())
       .padding(Dp(UI.PADDING))
   ) {
