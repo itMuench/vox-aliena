@@ -16,6 +16,7 @@ open class AudioPluginFactory {
   external fun voicesmith_plugin_setup(input: Int, output: Int, samplerate: Int, blocksize: Int, channels: Int, pointer: JnaPointerByReference, result: JnaResultByReference) : Boolean
   external fun voicesmith_plugin_set(param: String, value: String, pointer: JnaPointerByReference, result: JnaResultByReference) : Boolean
   external fun voicesmith_plugin_start(pointer: JnaPointerByReference, result: JnaResultByReference) : Boolean
+  external fun voicesmith_plugin_start_recording(path: String, pointer: JnaPointerByReference, result: JnaResultByReference) : Boolean
   external fun voicesmith_plugin_stop(pointer: JnaPointerByReference, result: JnaResultByReference) : Boolean
   external fun voicesmith_plugin_close(pointer: JnaPointerByReference, result: JnaResultByReference) : Boolean
 

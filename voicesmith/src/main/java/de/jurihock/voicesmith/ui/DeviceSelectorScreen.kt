@@ -22,6 +22,7 @@ fun DeviceSelectorScreen(modifier: Modifier = Modifier,
                          inputDevice: State<String>,
                          outputDevice: State<String>,
                          channels: State<Int>,
+                         enabled: Boolean = true,
                          onSelectInputDevice: () -> Unit,
                          onSelectOutputDevice: () -> Unit,
                          onSelectChannels: () -> Unit) {
@@ -34,9 +35,13 @@ fun DeviceSelectorScreen(modifier: Modifier = Modifier,
       modifier = Modifier.weight(1f),
       deviceName = inputDevice.value,
       buttonText = textInput,
+      enabled = enabled,
       onClick = onSelectInputDevice)
     Spacer(modifier = Modifier.width(Dp(UI.PADDING)))
-    OutlinedButton(modifier = Modifier.weight(0.5f), onClick = onSelectChannels) {
+    OutlinedButton(
+      modifier = Modifier.weight(0.5f),
+      enabled = enabled,
+      onClick = onSelectChannels) {
       Text(text = if (channels.value != 2) textMono else textStereo)
     }
     Spacer(modifier = Modifier.width(Dp(UI.PADDING)))
@@ -44,6 +49,7 @@ fun DeviceSelectorScreen(modifier: Modifier = Modifier,
       modifier = Modifier.weight(1f),
       deviceName = outputDevice.value,
       buttonText = textOutput,
+      enabled = enabled,
       onClick = onSelectOutputDevice)
   }
 
@@ -53,6 +59,7 @@ fun DeviceSelectorScreen(modifier: Modifier = Modifier,
 private fun DeviceButton(modifier: Modifier = Modifier,
                          deviceName: String,
                          buttonText: String,
+                         enabled: Boolean,
                          onClick: () -> Unit) {
   Column(
     modifier = modifier,
@@ -64,7 +71,10 @@ private fun DeviceButton(modifier: Modifier = Modifier,
       maxLines = 1,
       overflow = TextOverflow.Ellipsis,
       textAlign = TextAlign.Center)
-    OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
+    OutlinedButton(
+      modifier = Modifier.fillMaxWidth(),
+      enabled = enabled,
+      onClick = onClick) {
       Text(text = buttonText)
     }
   }

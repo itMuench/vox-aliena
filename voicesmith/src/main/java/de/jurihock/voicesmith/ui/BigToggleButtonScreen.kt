@@ -12,9 +12,13 @@ import androidx.compose.ui.unit.Dp
 @Composable
 fun BigToggleButtonScreen(modifier: Modifier = Modifier,
                           textOn: String, textOff: String, value: State<Boolean>,
+                          enabled: Boolean = true,
                           onToggle: () -> Unit) {
 
-  Button(modifier = modifier.fillMaxWidth(), onClick = onToggle) {
+  Button(
+    modifier = modifier.fillMaxWidth(),
+    enabled = enabled,
+    onClick = onToggle) {
     Text(
       text = if (value.value) textOff else textOn,
       modifier = Modifier.padding(Dp(0f), Dp(UI.PADDING * 2f)))
