@@ -26,7 +26,7 @@ fun BigToggleButtonScreen(modifier: Modifier = Modifier,
     onClick = onToggle) {
     Text(
       text = if (value.value) textOff else textOn,
-      modifier = Modifier.padding(Dp(0f), Dp(UI.PADDING * 2f)))
+      modifier = Modifier.padding(Dp(0f), Dp(UI.PADDING * 4f / 3f)))
   }
 
 }
