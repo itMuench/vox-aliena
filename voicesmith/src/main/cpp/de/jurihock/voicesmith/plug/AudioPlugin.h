@@ -19,6 +19,7 @@ public:
 
   virtual void start() = 0;
   virtual void startRecording(const std::string& path) = 0;
+  virtual float level() const = 0;
   virtual void stop() = 0;
 
 };
