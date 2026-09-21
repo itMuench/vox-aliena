@@ -185,15 +185,14 @@ class MainActivity : AudioServiceActivity() {
               }
             }) { padding ->
             Column(modifier = Modifier.padding(padding).padding(Dp(UI.PADDING))) {
-              Spacer(modifier = Modifier.weight(1f))
-
               OutlinedButton(
                 modifier = Modifier.fillMaxWidth(),
                 onClick = { effectsExpanded.value = !effectsExpanded.value }) {
-                Text(
-                  text = getString(
-                    if (effectsExpanded.value) R.string.effects_hide
-                    else R.string.effects_show))
+                val indicator = if (effectsExpanded.value) "▼" else "▶"
+                val label = getString(
+                  if (effectsExpanded.value) R.string.effects_hide
+                  else R.string.effects_show)
+                Text(text = "$indicator $label")
               }
 
               if (effectsExpanded.value) {
