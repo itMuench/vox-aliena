@@ -98,6 +98,23 @@ jna bool voicesmith_plugin_start_recording(const char* path, jna_pointer* pointe
   }
 }
 
+jna float voicesmith_plugin_level(jna_pointer* pointer, jna_result* result) {
+  if (*pointer == jna_nullptr) {
+    result->nok("Invalid plugin pointer!");
+    return 0.f;
+  }
+
+  try {
+    auto plugin = reinterpret_cast<AudioPlugin*>(*pointer);
+    result->ok();
+    return plugin->level();
+  }
+  catch (const std::exception& exception) {
+    result->nok(exception);
+    return 0.f;
+  }
+}
+
 jna bool voicesmith_plugin_stop(jna_pointer* pointer, jna_result* result) {
   if (*pointer == jna_nullptr) {
     return result->ok();

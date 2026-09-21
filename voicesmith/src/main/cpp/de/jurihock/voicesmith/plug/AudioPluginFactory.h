@@ -9,5 +9,6 @@ jna bool voicesmith_plugin_setup(int input, int output, int samplerate, int bloc
 jna bool voicesmith_plugin_set(const char* param, const char* value, jna_pointer* pointer, jna_result* result);
 jna bool voicesmith_plugin_start(jna_pointer* pointer, jna_result* result);
 jna bool voicesmith_plugin_start_recording(const char* path, jna_pointer* pointer, jna_result* result);
+jna float voicesmith_plugin_level(jna_pointer* pointer, jna_result* result);
 jna bool voicesmith_plugin_stop(jna_pointer* pointer, jna_result* result);
 jna bool voicesmith_plugin_close(jna_pointer* pointer, jna_result* result);

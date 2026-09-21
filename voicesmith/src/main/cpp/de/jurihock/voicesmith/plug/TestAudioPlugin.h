@@ -29,6 +29,7 @@ public:
 
   void start() override;
   void startRecording(const std::string& path) override;
+  float level() const override;
   void stop() override;
 
 private:

@@ -27,6 +27,7 @@ public:
   ~Mp3Recorder();
 
   void start();
+  float level() const;
   void stop();
 
 private:
@@ -41,6 +42,7 @@ private:
   const size_t channels;
 
   std::atomic_bool running = false;
+  std::atomic<float> currentLevel = 0.f;
   std::unique_ptr<std::thread> thread;
   std::exception_ptr failure;
 
@@ -51,6 +53,7 @@ private:
 
   void initialise();
   void loop();
+  void updateLevel(const AudioBlock& block);
   void append(const AudioBlock& block);
   void encode();
   void write(const unsigned char* data, const int size);

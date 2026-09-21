@@ -26,12 +26,14 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
 
   private var error: ((exception: Throwable) -> Unit)? = null
   private var effectValuesChanged: ((pitch: Double, timbre: Double) -> Unit)? = null
+  private var recordingLevelChanged: ((level: Float) -> Unit)? = null
   private var plugin: AudioPlugin? = null
   private var recordingFile: File? = null
   private var currentPitch = 0.0
   private var currentTimbre = 0.0
 
   private val dynamicHandler = Handler(Looper.getMainLooper())
+  private val levelHandler = Handler(Looper.getMainLooper())
   private val pitchWalk = DynamicEffectRandomWalk()
   private val timbreWalk = DynamicEffectRandomWalk()
 
@@ -82,6 +84,24 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
           this,
           dynamicIntervalMillis(preferences.timbreInterval))
       }
+    }
+  }
+
+  private val recordingLevelUpdate = object : Runnable {
+    override fun run() {
+      if (mode != AudioServiceMode.RECORDING) {
+        return
+      }
+
+      try {
+        val level = plugin?.level()?.coerceIn(0f, 1f) ?: 0f
+        recordingLevelChanged?.invoke(level)
+      } catch (exception: Throwable) {
+        onPluginError(exception)
+        return
+      }
+
+      levelHandler.postDelayed(this, RECORDING_LEVEL_INTERVAL_MS)
     }
   }
 
@@ -162,6 +182,7 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
       recordingFile = file
       mode = AudioServiceMode.RECORDING
       scheduleDynamicEffects()
+      scheduleRecordingLevelUpdates()
       return file
     } catch (exception: Throwable) {
       file.delete()
@@ -172,6 +193,7 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
   fun stop(): File? {
     Log.i("Stopping audio plugin")
     stopDynamicEffects()
+    stopRecordingLevelUpdates()
 
     val finishedRecording =
       if (mode == AudioServiceMode.RECORDING) recordingFile else null
@@ -213,6 +235,7 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
 
     Log.i("Destroying audio service")
     stopDynamicEffects()
+    stopRecordingLevelUpdates()
     try {
       plugin?.close()
       plugin = null
@@ -290,6 +313,27 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
     callback(currentPitch, currentTimbre)
   }
 
+  private fun scheduleRecordingLevelUpdates() {
+    levelHandler.removeCallbacks(recordingLevelUpdate)
+    recordingLevelChanged?.invoke(0f)
+    levelHandler.post(recordingLevelUpdate)
+  }
+
+  private fun stopRecordingLevelUpdates() {
+    levelHandler.removeCallbacks(recordingLevelUpdate)
+    recordingLevelChanged?.invoke(0f)
+  }
+
+  fun onRecordingLevelChanged(callback: (level: Float) -> Unit) {
+    recordingLevelChanged = callback
+    callback(
+      if (mode == AudioServiceMode.RECORDING) {
+        plugin?.level()?.coerceIn(0f, 1f) ?: 0f
+      } else {
+        0f
+      })
+  }
+
   fun onServiceError(callback: (exception: Throwable) -> Unit) {
     error = callback
   }
@@ -324,6 +368,7 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
 
   private fun onPluginError(exception: Throwable) {
     stopDynamicEffects()
+    stopRecordingLevelUpdates()
     try {
       plugin?.stop()
     } catch (stopException: Throwable) {
@@ -336,6 +381,11 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
       recordingFile = null
       error?.invoke(exception)
     }
+  }
+
+
+  private companion object {
+    const val RECORDING_LEVEL_INTERVAL_MS = 50L
   }
 
 }
