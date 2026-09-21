@@ -138,6 +138,10 @@ void TestAudioPlugin::startRecording(const std::string& path) {
   state.recorder = recorder;
 }
 
+float TestAudioPlugin::level() const {
+  return (state.recorder != nullptr) ? state.recorder->level() : 0.f;
+}
+
 void TestAudioPlugin::stop() {
   if (state.pipeline != nullptr) {
     state.pipeline->stop();
