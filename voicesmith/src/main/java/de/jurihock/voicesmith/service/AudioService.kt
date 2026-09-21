@@ -83,6 +83,11 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
       throw IllegalStateException("Audio service is already active!")
     }
 
+    if (preferences.pitch == 0 && preferences.timbre == 0) {
+      throw IllegalStateException(
+        "Pitch or Timbre must be non-zero before starting an MP3 recording!")
+    }
+
     val file = createRecordingFile()
 
     Log.i("Starting MP3 recording to ${file.absolutePath}")
@@ -159,8 +164,12 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
       "blocksize" -> resetLive()
       "channels" -> resetLive()
       "delay" -> plugin?.set("delay", preferences.delay.toString())
-      "pitch" -> plugin?.set("pitch", preferences.pitch.toString())
-      "timbre" -> plugin?.set("timbre", preferences.timbre.toString())
+      "pitch" -> if (mode != AudioServiceMode.RECORDING) {
+        plugin?.set("pitch", preferences.pitch.toString())
+      }
+      "timbre" -> if (mode != AudioServiceMode.RECORDING) {
+        plugin?.set("timbre", preferences.timbre.toString())
+      }
     }
   }
 
