@@ -56,6 +56,16 @@ open class AudioPlugin(val name: String) : AutoCloseable, JnaCallback {
     }.onFailure { throw it }
   }
 
+  fun startRecording(path: String) {
+    res.result { res ->
+      jna.voicesmith_plugin_start_recording(path, ref, res)
+    }.onSuccess {
+      state = true
+    }.onFailure {
+      state = false
+    }.onFailure { throw it }
+  }
+
   fun stop() {
     res.result { res ->
       jna.voicesmith_plugin_stop(ref, res)

@@ -4,6 +4,7 @@
 
 #include <voicesmith/etc/JNA.h>
 #include <voicesmith/io/AudioPipeline.h>
+#include <voicesmith/io/Mp3Recorder.h>
 #include <voicesmith/plug/AudioPlugin.h>
 
 #include <voicesmith/fx/StereoChainEffect.h>
@@ -27,6 +28,7 @@ public:
            const std::string& value) override;
 
   void start() override;
+  void startRecording(const std::string& path) override;
   void stop() override;
 
 private:
@@ -46,7 +48,14 @@ private:
   struct {
 
     std::shared_ptr<AudioPipeline> pipeline;
-    std::shared_ptr<StereoChainEffect<DelayEffect, PitchTimbreShiftEffect>> effects;
+    std::shared_ptr<AudioSource> recordingSource;
+    std::shared_ptr<Mp3Recorder> recorder;
+
+    // Live mode uses Delay + Pitch/Timbre.
+    std::shared_ptr<StereoChainEffect<DelayEffect, PitchTimbreShiftEffect>> liveEffects;
+
+    // MP3 recording intentionally ignores Delay.
+    std::shared_ptr<StereoChainEffect<PitchTimbreShiftEffect>> recordingEffects;
 
   } state;
 

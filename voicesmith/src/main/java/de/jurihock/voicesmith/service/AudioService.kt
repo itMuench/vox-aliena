@@ -3,11 +3,19 @@ package de.jurihock.voicesmith.service
 import android.app.Service
 import android.content.Intent
 import android.content.SharedPreferences
+import android.os.Environment
 import android.os.IBinder
 import de.jurihock.voicesmith.etc.Log
 import de.jurihock.voicesmith.etc.Preferences
 import de.jurihock.voicesmith.plug.AudioPlugin
 import de.jurihock.voicesmith.plug.TestAudioPlugin
+import java.io.File
+
+enum class AudioServiceMode {
+  STOPPED,
+  LIVE,
+  RECORDING
+}
 
 class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListener {
 
@@ -15,9 +23,13 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
 
   private var error: ((exception: Throwable) -> Unit)? = null
   private var plugin: AudioPlugin? = null
+  private var recordingFile: File? = null
+
+  var mode: AudioServiceMode = AudioServiceMode.STOPPED
+    private set
 
   val isStarted: Boolean
-    get() = plugin?.isStarted ?: false
+    get() = mode != AudioServiceMode.STOPPED && plugin?.isStarted == true
 
   private fun sync() {
     Log.i("Syncing audio plugin parameters")
@@ -36,32 +48,79 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
     }
   }
 
-  private fun reset() {
-    Log.i("Resetting audio plugin")
-    val restart = isStarted
-    stop()
-    sync()
-    if (restart) {
-      start()
+  private fun resetLive() {
+    if (mode == AudioServiceMode.RECORDING) {
+      Log.i("Audio routing change will be applied to the next recording")
+      return
     }
-  }
 
-  fun start() {
-    Log.i("Starting audio plugin")
+    Log.i("Resetting audio plugin")
+    val restart = mode == AudioServiceMode.LIVE
+
     try {
-      plugin?.start()
+      stop()
+      sync()
+      if (restart) {
+        startLive()
+      }
     } catch (exception: Throwable) {
       onPluginError(exception)
     }
   }
 
-  fun stop() {
+  fun startLive() {
+    if (mode != AudioServiceMode.STOPPED) {
+      return
+    }
+
+    Log.i("Starting live audio plugin")
+    requireNotNull(plugin) { "Audio plugin is unavailable!" }.start()
+    mode = AudioServiceMode.LIVE
+  }
+
+  fun startRecording(): File {
+    if (mode != AudioServiceMode.STOPPED) {
+      throw IllegalStateException("Audio service is already active!")
+    }
+
+    if (preferences.pitch == 0 && preferences.timbre == 0) {
+      throw IllegalStateException(
+        "Pitch or Timbre must be non-zero before starting an MP3 recording!")
+    }
+
+    val file = createRecordingFile()
+
+    Log.i("Starting MP3 recording to ${file.absolutePath}")
+    try {
+      requireNotNull(plugin) { "Audio plugin is unavailable!" }
+        .startRecording(file.absolutePath)
+      recordingFile = file
+      mode = AudioServiceMode.RECORDING
+      return file
+    } catch (exception: Throwable) {
+      file.delete()
+      throw exception
+    }
+  }
+
+  fun stop(): File? {
     Log.i("Stopping audio plugin")
+
+    val finishedRecording =
+      if (mode == AudioServiceMode.RECORDING) recordingFile else null
+
     try {
       plugin?.stop()
     } catch (exception: Throwable) {
+      finishedRecording?.delete()
       Log.e(exception)
+      throw exception
+    } finally {
+      mode = AudioServiceMode.STOPPED
+      recordingFile = null
     }
+
+    return finishedRecording?.takeIf { it.exists() && it.length() > 0 }
   }
 
   override fun onBind(intent: Intent?): IBinder = bindAudioService()
@@ -91,19 +150,26 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
       plugin = null
     } catch (exception: Throwable) {
       Log.e(exception)
+    } finally {
+      mode = AudioServiceMode.STOPPED
+      recordingFile = null
     }
   }
 
   override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, name: String?) {
     when(name) {
-      "input" -> reset()
-      "output" -> reset()
-      "samplerate" -> reset()
-      "blocksize" -> reset()
-      "channels" -> reset()
+      "input" -> resetLive()
+      "output" -> resetLive()
+      "samplerate" -> resetLive()
+      "blocksize" -> resetLive()
+      "channels" -> resetLive()
       "delay" -> plugin?.set("delay", preferences.delay.toString())
-      "pitch" -> plugin?.set("pitch", preferences.pitch.toString())
-      "timbre" -> plugin?.set("timbre", preferences.timbre.toString())
+      "pitch" -> if (mode != AudioServiceMode.RECORDING) {
+        plugin?.set("pitch", preferences.pitch.toString())
+      }
+      "timbre" -> if (mode != AudioServiceMode.RECORDING) {
+        plugin?.set("timbre", preferences.timbre.toString())
+      }
     }
   }
 
@@ -111,10 +177,38 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
     error = callback
   }
 
+  private fun createRecordingFile(): File {
+    val external = getExternalFilesDir(Environment.DIRECTORY_MUSIC)
+    val directory =
+      if (external != null) File(external, "VoxAliena")
+      else File(filesDir, "recordings")
+
+    if (!directory.exists() && !directory.mkdirs()) {
+      throw IllegalStateException("Unable to create recording directory!")
+    }
+
+    var timestamp = System.currentTimeMillis()
+    var file = File(directory, "${timestamp}.mp3")
+
+    while (file.exists()) {
+      timestamp += 1
+      file = File(directory, "${timestamp}.mp3")
+    }
+
+    return file
+  }
+
   private fun onPluginError(exception: Throwable) {
     try {
       plugin?.stop()
+    } catch (stopException: Throwable) {
+      Log.e(stopException)
     } finally {
+      if (mode == AudioServiceMode.RECORDING) {
+        recordingFile?.delete()
+      }
+      mode = AudioServiceMode.STOPPED
+      recordingFile = null
       error?.invoke(exception)
     }
   }
