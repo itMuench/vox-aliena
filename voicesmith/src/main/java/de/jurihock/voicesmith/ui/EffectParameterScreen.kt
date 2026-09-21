@@ -97,7 +97,7 @@ fun ManualSemitoneScreen(modifier: Modifier = Modifier,
   }
 
   val parsed = parseDecimal(text)
-  val isError = text.isNotBlank() && (parsed == null || parsed < min || parsed > max)
+  val isError = parsed == null || parsed < min || parsed > max
 
   OutlinedTextField(
     modifier = modifier.fillMaxWidth(),
@@ -117,7 +117,7 @@ fun ManualSemitoneScreen(modifier: Modifier = Modifier,
     isError = isError,
     label = { Text(text = "${name} (${unit})") },
     supportingText = { Text(text = rangeText) },
-    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text))
 }
 
 private fun parseDecimal(value: String): Double? {
