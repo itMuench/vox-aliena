@@ -22,8 +22,8 @@ val sdk by extra(intArrayOf(33, 34, 36)) // minSdk <= targetSdk <= compileSdk
 val jvm by extra(1.8) // sourceCompatibility == targetCompatibility == jvmTarget
 
 // release version information
-val releaseVersionName by extra("1.0")
-val releaseVersionCode by extra(14)
+val releaseVersionName by extra("1.1")
+val releaseVersionCode by extra(15)
 
 plugins {
   alias(libs.plugins.android.gradle.plugin)
