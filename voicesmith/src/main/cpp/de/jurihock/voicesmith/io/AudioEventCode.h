@@ -9,6 +9,7 @@ enum class AudioEventCode {
   SinkUnderrun,
   PipeRead,
   PipeWrite,
+  RecordingLevel,
   ERROR,
   SourceError,
   SinkError,
