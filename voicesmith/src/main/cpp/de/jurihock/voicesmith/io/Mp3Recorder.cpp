@@ -7,13 +7,15 @@ Mp3Recorder::Mp3Recorder(const std::shared_ptr<AudioBlockQueue> queue,
                          const std::string& path,
                          const float samplerate,
                          const size_t blocksize,
-                         const size_t channels) :
+                         const size_t channels,
+                         const std::function<void(float)>& onLevel) :
   queue(queue),
   effect(effect),
   path(path),
   samplerate(static_cast<int>(std::lround(samplerate))),
   blocksize(blocksize),
-  channels(channels) {
+  channels(channels),
+  onLevel(onLevel) {
   if (channels < 1 || channels > 2) {
     throw std::runtime_error("MP3 recording supports mono or stereo only!");
   }
@@ -107,6 +109,8 @@ void Mp3Recorder::initialise() {
       blocksize,
       channels);
   }
+
+  lastLevelEmission = {};
 }
 
 void Mp3Recorder::loop() {
@@ -123,6 +127,7 @@ void Mp3Recorder::loop() {
           input.copyto(processed);
         }
 
+        emitLevel(processed);
         append(processed);
         ++index;
       });
@@ -134,6 +139,40 @@ void Mp3Recorder::loop() {
   }
 
   cleanup();
+}
+
+void Mp3Recorder::emitLevel(const AudioBlock& block) {
+  if (!onLevel) {
+    return;
+  }
+
+  const auto now = std::chrono::steady_clock::now();
+  constexpr auto interval = std::chrono::milliseconds(50);
+
+  if (lastLevelEmission.time_since_epoch().count() != 0 &&
+      now - lastLevelEmission < interval) {
+    return;
+  }
+
+  const std::span<const float> samples = block;
+  if (samples.empty()) {
+    return;
+  }
+
+  double squared = 0.0;
+  for (const auto sample : samples) {
+    const auto value = static_cast<double>(sample);
+    squared += value * value;
+  }
+
+  const auto rms = static_cast<float>(
+    std::sqrt(squared / static_cast<double>(samples.size())));
+
+  const auto db = 20.f * std::log10(std::max(rms, 1e-6f));
+  const auto level = std::clamp((db + 60.f) / 60.f, 0.f, 1.f);
+
+  lastLevelEmission = now;
+  onLevel(level);
 }
 
 void Mp3Recorder::append(const AudioBlock& block) {
