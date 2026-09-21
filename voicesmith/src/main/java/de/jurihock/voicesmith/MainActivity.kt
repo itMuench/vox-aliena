@@ -14,6 +14,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -48,6 +49,8 @@ import de.jurihock.voicesmith.ui.RecordingItemScreen
 import de.jurihock.voicesmith.ui.SettingsScreen
 import de.jurihock.voicesmith.ui.UI
 import java.io.File
+import java.math.BigDecimal
+import java.math.RoundingMode
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -62,6 +65,8 @@ class MainActivity : AudioServiceActivity() {
   private val delay = mutableIntStateOf(0)
   private val pitch = mutableStateOf(0.0)
   private val timbre = mutableStateOf(0.0)
+  private val currentPitch = mutableStateOf(0.0)
+  private val currentTimbre = mutableStateOf(0.0)
   private val manualEffects = mutableStateOf(false)
   private val settingsOpen = mutableStateOf(false)
   private val draftDelay = mutableIntStateOf(0)
@@ -87,6 +92,8 @@ class MainActivity : AudioServiceActivity() {
     delay.intValue = preferences.delay
     pitch.value = preferences.pitch
     timbre.value = preferences.timbre
+    currentPitch.value = preferences.pitch
+    currentTimbre.value = preferences.timbre
     manualEffects.value = preferences.manualEffects
     inputDevice.value = selectedDeviceName(devices.inputs, preferences.input)
     outputDevice.value = selectedDeviceName(devices.outputs, preferences.output)
@@ -237,6 +244,16 @@ class MainActivity : AudioServiceActivity() {
               }
             }) { padding ->
             Column(modifier = Modifier.padding(padding).padding(Dp(UI.PADDING))) {
+              Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+              ) {
+                Text(text = "${getString(R.string.pitch)}: ${formatEffectValue(currentPitch.value)} ${getString(R.string.semitones)}")
+                Text(text = "${getString(R.string.timbre)}: ${formatEffectValue(currentTimbre.value)} ${getString(R.string.semitones)}")
+              }
+
+              Spacer(modifier = Modifier.height(Dp(UI.PADDING)))
+
               OutlinedButton(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !audioActive,
@@ -268,6 +285,7 @@ class MainActivity : AudioServiceActivity() {
 
   override fun onLiveAudioServiceStopped() {
     liveState.value = false
+    resetCurrentEffectValues()
     game.off()
     vibrator.off()
   }
@@ -281,6 +299,7 @@ class MainActivity : AudioServiceActivity() {
 
   override fun onRecordingAudioServiceStopped(file: File) {
     recordingState.value = false
+    resetCurrentEffectValues()
     game.off()
     vibrator.off()
 
@@ -290,9 +309,15 @@ class MainActivity : AudioServiceActivity() {
     refreshRecordings()
   }
 
+  override fun onAudioEffectValuesChanged(pitch: Double, timbre: Double) {
+    currentPitch.value = pitch
+    currentTimbre.value = timbre
+  }
+
   override fun onAudioServiceFailed() {
     liveState.value = false
     recordingState.value = false
+    resetCurrentEffectValues()
     game.off()
     vibrator.error()
   }
@@ -551,6 +576,8 @@ class MainActivity : AudioServiceActivity() {
     delay.intValue = draftDelay.intValue
     pitch.value = draftPitch.value
     timbre.value = draftTimbre.value
+    currentPitch.value = draftPitch.value
+    currentTimbre.value = draftTimbre.value
     manualEffects.value = draftManualEffects.value
 
     preferences.delay = draftDelay.intValue
@@ -563,6 +590,18 @@ class MainActivity : AudioServiceActivity() {
     preferences.timbreRange = draftTimbreRange.value
 
     settingsOpen.value = false
+  }
+
+  private fun resetCurrentEffectValues() {
+    currentPitch.value = pitch.value
+    currentTimbre.value = timbre.value
+  }
+
+  private fun formatEffectValue(value: Double): String {
+    return BigDecimal.valueOf(value)
+      .setScale(10, RoundingMode.HALF_UP)
+      .stripTrailingZeros()
+      .toPlainString()
   }
 
   private fun onSelectInputDevice() {
