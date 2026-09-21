@@ -66,6 +66,12 @@ open class AudioPlugin(val name: String) : AutoCloseable, JnaCallback {
     }.onFailure { throw it }
   }
 
+  fun level(): Float {
+    return res.result { res ->
+      jna.voicesmith_plugin_level(ref, res)
+    }.getOrThrow()
+  }
+
   fun stop() {
     res.result { res ->
       jna.voicesmith_plugin_stop(ref, res)
