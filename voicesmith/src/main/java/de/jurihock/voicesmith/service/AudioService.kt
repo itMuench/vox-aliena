@@ -10,6 +10,7 @@ import de.jurihock.voicesmith.etc.Preferences
 import de.jurihock.voicesmith.plug.AudioPlugin
 import de.jurihock.voicesmith.plug.TestAudioPlugin
 import java.io.File
+import java.security.SecureRandom
 
 enum class AudioServiceMode {
   STOPPED,
@@ -187,13 +188,20 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
       throw IllegalStateException("Unable to create recording directory!")
     }
 
-    var timestamp = System.currentTimeMillis()
-    var file = File(directory, "${timestamp}.mp3")
-
-    while (file.exists()) {
-      timestamp += 1
-      file = File(directory, "${timestamp}.mp3")
+    val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+    val random = SecureRandom().apply {
+      setSeed(System.currentTimeMillis())
     }
+
+    var file: File
+    do {
+      val name = buildString {
+        repeat(12) {
+          append(alphabet[random.nextInt(alphabet.length)])
+        }
+      }
+      file = File(directory, "${name}.mp3")
+    } while (file.exists())
 
     return file
   }
