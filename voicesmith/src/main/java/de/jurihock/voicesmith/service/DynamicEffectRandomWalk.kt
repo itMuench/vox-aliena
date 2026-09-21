@@ -3,7 +3,12 @@ package de.jurihock.voicesmith.service
 import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.min
+import kotlin.math.roundToLong
 import kotlin.random.Random
+
+internal fun dynamicIntervalMillis(seconds: Double): Long {
+  return (seconds.coerceIn(1.0, 5.0) * 1000.0).roundToLong()
+}
 
 internal class DynamicEffectRandomWalk(
   private val randomUp: () -> Boolean = { Random.nextBoolean() }
