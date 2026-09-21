@@ -101,4 +101,6 @@ dependencies {
   implementation(libs.jetbrains.compose.runtime)
   implementation(libs.jna) { artifact { type = "aar" } } // don't remove aar artifact!
   implementation(libs.oboe)
+
+  testImplementation("junit:junit:4.13.2")
 }
