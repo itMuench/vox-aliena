@@ -25,5 +25,40 @@ jobs:
     - name: Build
       run: ./gradlew assembleRelease
 
+    - name: Verify 16 KB native library alignment
+      run: |
+        rm -rf /tmp/voicesmith-apk
+        mkdir -p /tmp/voicesmith-apk
+        unzip -q voicesmith/build/outputs/apk/release/voicesmith-release.apk 'lib/*/*.so' -d /tmp/voicesmith-apk
+        python3 - <<'PY'
+        import pathlib
+        import subprocess
+        import sys
+
+        root = pathlib.Path("/tmp/voicesmith-apk/lib")
+        libraries = sorted(
+            list(root.glob("arm64-v8a/*.so")) +
+            list(root.glob("x86_64/*.so")))
+        if not libraries:
+            sys.exit("No 64-bit native libraries found in APK")
+
+        failed = []
+        for library in libraries:
+            output = subprocess.check_output(
+                ["readelf", "-lW", str(library)], text=True)
+            alignments = [
+                int(fields[-1], 16)
+                for line in output.splitlines()
+                if (fields := line.split()) and fields[0] == "LOAD"
+            ]
+            minimum = min(alignments, default=0)
+            print(f"{library}: minimum LOAD alignment 0x{minimum:x}")
+            if minimum < 0x4000:
+                failed.append(str(library))
+
+        if failed:
+            sys.exit("Native libraries are not 16 KB aligned: " + ", ".join(failed))
+        PY
+
     - name: Lint
       run: ./gradlew lintRelease
