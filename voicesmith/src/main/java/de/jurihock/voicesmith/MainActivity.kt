@@ -139,6 +139,30 @@ class MainActivity : AudioServiceActivity() {
             },
             bottomBar = {
               Column(modifier = Modifier.padding(Dp(UI.PADDING))) {
+                if (recordings.isNotEmpty()) {
+                  LazyColumn(
+                    modifier = Modifier
+                      .fillMaxWidth()
+                      .heightIn(
+                        min = Dp(UI.PADDING * 5),
+                        max = Dp(UI.PADDING * 16)),
+                    verticalArrangement = Arrangement.spacedBy(Dp(UI.PADDING))) {
+                    items(
+                      items = recordings,
+                      key = { it.absolutePath }) { file ->
+                      RecordingItemScreen(
+                        fileName = file.name,
+                        isPlaying = playingRecording.value == file,
+                        textShare = getString(R.string.recording_share),
+                        textDelete = getString(R.string.recording_delete),
+                        onPlayPause = { toggleRecordingPlayback(file) },
+                        onShare = { shareRecording(file) },
+                        onDelete = { deleteRecording(file) })
+                    }
+                  }
+                  Spacer(modifier = Modifier.height(Dp(UI.PADDING)))
+                }
+
                 BigToggleButtonScreen(
                   textOn = getString(R.string.start_live_distortion),
                   textOff = getString(R.string.stop),
@@ -195,28 +219,6 @@ class MainActivity : AudioServiceActivity() {
                   })
               }
 
-              if (recordings.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(Dp(UI.PADDING)))
-                LazyColumn(
-                  modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = Dp(UI.PADDING * 16)),
-                  verticalArrangement = Arrangement.spacedBy(Dp(UI.PADDING))) {
-                  items(
-                    items = recordings,
-                    key = { it.absolutePath }) { file ->
-                    RecordingItemScreen(
-                      fileName = file.name,
-                      isPlaying = playingRecording.value == file,
-                      textShare = getString(R.string.recording_share),
-                      textDelete = getString(R.string.recording_delete),
-                      onPlayPause = { toggleRecordingPlayback(file) },
-                      onShare = { shareRecording(file) },
-                      onDelete = { deleteRecording(file) })
-                  }
-                }
-              }
-
               Spacer(modifier = Modifier.weight(1f))
             }
           }
@@ -251,8 +253,10 @@ class MainActivity : AudioServiceActivity() {
     game.off()
     vibrator.off()
 
-    recordings.remove(file)
-    recordings.add(0, file)
+    // Reload from disk after the recorder has fully finalized the MP3. This keeps
+    // the UI in sync with the files that actually exist and guarantees that a
+    // successfully finished recording is visible immediately.
+    refreshRecordings()
   }
 
   override fun onAudioServiceFailed() {
