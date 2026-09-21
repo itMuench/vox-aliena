@@ -22,7 +22,8 @@ public:
               const std::string& path,
               const float samplerate,
               const size_t blocksize,
-              const size_t channels);
+              const size_t channels,
+              const std::function<void(float)>& onLevel);
 
   ~Mp3Recorder();
 
@@ -39,6 +40,7 @@ private:
   const int samplerate;
   const size_t blocksize;
   const size_t channels;
+  const std::function<void(float)> onLevel;
 
   std::atomic_bool running = false;
   std::unique_ptr<std::thread> thread;
@@ -48,10 +50,12 @@ private:
   shine_t encoder = nullptr;
   size_t samplesPerFrame = 0;
   std::vector<int16_t> pcm;
+  std::chrono::steady_clock::time_point lastLevelEmission {};
 
   void initialise();
   void loop();
   void append(const AudioBlock& block);
+  void emitLevel(const AudioBlock& block);
   void encode();
   void write(const unsigned char* data, const int size);
   void finish();
