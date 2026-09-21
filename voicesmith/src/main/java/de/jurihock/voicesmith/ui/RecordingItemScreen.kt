@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.Dp
 
 @Composable
 fun RecordingItemScreen(modifier: Modifier = Modifier,
+                        position: Int,
                         fileName: String,
                         isPlaying: Boolean,
                         textShare: String,
@@ -40,6 +41,10 @@ fun RecordingItemScreen(modifier: Modifier = Modifier,
         .fillMaxWidth()
         .padding(Dp(UI.PADDING / 2)),
       verticalAlignment = Alignment.CenterVertically) {
+
+      Text(
+        modifier = Modifier.padding(horizontal = Dp(UI.PADDING / 2)),
+        text = "${position}.")
 
       IconButton(onClick = onPlayPause) {
         Text(text = if (isPlaying) "⏸" else "▶")
