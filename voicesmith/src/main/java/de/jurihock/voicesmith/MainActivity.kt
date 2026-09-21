@@ -13,9 +13,11 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.core.content.FileProvider
@@ -46,6 +49,7 @@ import de.jurihock.voicesmith.ui.BigToggleButtonScreen
 import de.jurihock.voicesmith.ui.DeviceSelectorScreen
 import de.jurihock.voicesmith.ui.MainTheme
 import de.jurihock.voicesmith.ui.RecordingItemScreen
+import de.jurihock.voicesmith.ui.RecordingWaveformScreen
 import de.jurihock.voicesmith.ui.SettingsScreen
 import de.jurihock.voicesmith.ui.UI
 import java.io.File
@@ -86,6 +90,9 @@ class MainActivity : AudioServiceActivity() {
   private val recordings = mutableStateListOf<File>()
   private val playingRecording = mutableStateOf<File?>(null)
   private val quickShareTarget = mutableStateOf<String?>(null)
+  private val recordingWaveform = mutableStateListOf<Float>().apply {
+    repeat(48) { add(0f) }
+  }
 
   private var mediaPlayer: MediaPlayer? = null
 
@@ -271,7 +278,19 @@ class MainActivity : AudioServiceActivity() {
                 Text(text = getString(R.string.settings))
               }
 
-              Spacer(modifier = Modifier.weight(1f))
+              Box(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .weight(1f),
+                contentAlignment = Alignment.Center) {
+                if (recordingState.value) {
+                  RecordingWaveformScreen(
+                    modifier = Modifier
+                      .fillMaxWidth()
+                      .fillMaxHeight(0.45f),
+                    levels = recordingWaveform)
+                }
+              }
             }
           }
           }
@@ -302,6 +321,7 @@ class MainActivity : AudioServiceActivity() {
 
   override fun onRecordingAudioServiceStarted() {
     stopRecordingPlayback()
+    resetRecordingWaveform()
     recordingState.value = true
     game.on()
     vibrator.on()
@@ -309,6 +329,7 @@ class MainActivity : AudioServiceActivity() {
 
   override fun onRecordingAudioServiceStopped(file: File) {
     recordingState.value = false
+    resetRecordingWaveform()
     resetCurrentEffectValues()
     game.off()
     vibrator.off()
@@ -319,6 +340,17 @@ class MainActivity : AudioServiceActivity() {
     refreshRecordings()
   }
 
+  override fun onRecordingLevelChanged(level: Float) {
+    if (!recordingState.value) {
+      return
+    }
+
+    if (recordingWaveform.size >= 48) {
+      recordingWaveform.removeAt(0)
+    }
+    recordingWaveform.add(level.coerceIn(0f, 1f))
+  }
+
   override fun onAudioEffectValuesChanged(pitch: Double, timbre: Double) {
     currentPitch.value = pitch
     currentTimbre.value = timbre
@@ -327,9 +359,17 @@ class MainActivity : AudioServiceActivity() {
   override fun onAudioServiceFailed() {
     liveState.value = false
     recordingState.value = false
+    resetRecordingWaveform()
     resetCurrentEffectValues()
     game.off()
     vibrator.error()
+  }
+
+  private fun resetRecordingWaveform() {
+    recordingWaveform.clear()
+    repeat(48) {
+      recordingWaveform.add(0f)
+    }
   }
 
   private fun toggleRecordingPlayback(file: File) {
