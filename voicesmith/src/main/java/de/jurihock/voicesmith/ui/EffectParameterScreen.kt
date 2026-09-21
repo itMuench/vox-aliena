@@ -55,16 +55,21 @@ fun EffectModeSwitchScreen(modifier: Modifier = Modifier,
 fun DynamicRangeScreen(modifier: Modifier = Modifier,
                        name: String,
                        unit: String,
+                       intervalName: String,
+                       intervalUnit: String,
+                       intervalRangeText: String,
                        textStatic: String,
                        textDynamic: String,
                        allowedRangePrefix: String,
                        unavailableText: String,
                        dynamic: State<Boolean>,
                        value: State<Double>,
+                       interval: State<Double>,
                        maxRange: Double,
                        minRange: Double = 0.1,
                        onDynamicChange: (dynamic: Boolean) -> Unit,
-                       onRangeChange: (value: Double) -> Unit) {
+                       onRangeChange: (value: Double) -> Unit,
+                       onIntervalChange: (value: Double) -> Unit) {
 
   val dynamicAvailable = maxRange >= minRange
   val fieldEnabled = dynamic.value && dynamicAvailable
@@ -72,10 +77,16 @@ fun DynamicRangeScreen(modifier: Modifier = Modifier,
   var text by remember(value.value) {
     mutableStateOf(formatDecimal(value.value))
   }
+  var intervalText by remember(interval.value) {
+    mutableStateOf(formatDecimal(interval.value))
+  }
 
   val parsed = parseDecimal(text)
   val isError = fieldEnabled &&
     (parsed == null || parsed < minRange || parsed > maxRange)
+  val parsedInterval = parseDecimal(intervalText)
+  val intervalIsError = fieldEnabled &&
+    (parsedInterval == null || parsedInterval < 1.0 || parsedInterval > 5.0)
 
   Column(modifier = modifier.fillMaxWidth()) {
     Row(
@@ -120,6 +131,28 @@ fun DynamicRangeScreen(modifier: Modifier = Modifier,
             unavailableText
           })
       },
+      keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text))
+
+    Spacer(modifier = Modifier.height(Dp(UI.PADDING)))
+
+    OutlinedTextField(
+      modifier = Modifier.fillMaxWidth(),
+      value = intervalText,
+      onValueChange = { newText ->
+        intervalText = newText
+        parseDecimal(newText)
+          ?.takeIf { it in 1.0..5.0 }
+          ?.let { newValue ->
+            if (newValue != interval.value) {
+              onIntervalChange(newValue)
+            }
+          }
+      },
+      enabled = fieldEnabled,
+      singleLine = true,
+      isError = intervalIsError,
+      label = { Text(text = "${intervalName} (${intervalUnit})") },
+      supportingText = { Text(text = intervalRangeText) },
       keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text))
   }
 }
