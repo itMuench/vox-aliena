@@ -122,10 +122,43 @@ void AudioStream::open() {
 
   config.device.get = state.stream->getDeviceId();
   config.samplerate.get = state.stream->getSampleRate();
-  config.blocksize.get = state.stream->getFramesPerDataCallback() * state.stream->getChannelCount();
-  config.blocksize.max = state.stream->getBufferSizeInFrames() * state.stream->getChannelCount();
-  config.channels.get = state.stream->getChannelCount();
-  config.channels.max = state.stream->getHardwareChannelCount();
+
+  const auto channels = state.stream->getChannelCount();
+  const auto callbackFrames = state.stream->getFramesPerDataCallback();
+  const auto requestedFrames = static_cast<int32_t>(config.blocksize.set.value_or(0));
+  const auto burstFrames = state.stream->getFramesPerBurst();
+
+  const auto blockFrames =
+    (callbackFrames > 0) ? callbackFrames :
+    (requestedFrames > 0) ? requestedFrames :
+    burstFrames;
+
+  if (channels <= 0 || blockFrames <= 0) {
+    close();
+    throw std::runtime_error(
+      $("Unable to determine a valid audio callback block size: "
+        "channels={0}, callback={1}, requested={2}, burst={3}!",
+        channels, callbackFrames, requestedFrames, burstFrames));
+  }
+
+  config.blocksize.get =
+    static_cast<size_t>(blockFrames) * static_cast<size_t>(channels);
+  config.blocksize.max =
+    static_cast<size_t>(state.stream->getBufferSizeInFrames()) *
+    static_cast<size_t>(channels);
+  config.channels.get = static_cast<size_t>(channels);
+  config.channels.max =
+    static_cast<size_t>(std::max(0, state.stream->getHardwareChannelCount()));
+
+  Log::i(
+    "Resolved audio block: callback={0} requested={1} burst={2} -> "
+    "frames={3}, channels={4}, samples={5}",
+    callbackFrames,
+    requestedFrames,
+    burstFrames,
+    blockFrames,
+    channels,
+    config.blocksize.get.value());
 
   const double seconds = 1.0 * state.stream->getBufferSizeInFrames() / state.stream->getSampleRate();
   const double milliseconds = std::max(1.0, seconds * 1e+3);
