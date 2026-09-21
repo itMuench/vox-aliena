@@ -18,6 +18,7 @@ import de.jurihock.voicesmith.etc.Game
 import de.jurihock.voicesmith.etc.Log
 import de.jurihock.voicesmith.etc.Preferences
 import de.jurihock.voicesmith.etc.Vibrator
+import de.jurihock.voicesmith.io.AudioDevice
 import de.jurihock.voicesmith.io.AudioDevices
 import de.jurihock.voicesmith.io.selectChannels
 import de.jurihock.voicesmith.io.selectInputDevice
@@ -41,12 +42,22 @@ class MainActivity : AudioServiceActivity() {
   private val pitch = mutableIntStateOf(0)
   private val timbre = mutableIntStateOf(0)
   private val state = mutableStateOf(false)
+  private val inputDevice = mutableStateOf("DEFAULT")
+  private val outputDevice = mutableStateOf("DEFAULT")
 
   private fun sync() {
     channels.intValue = preferences.channels
     delay.intValue = preferences.delay
     pitch.intValue = preferences.pitch
     timbre.intValue = preferences.timbre
+    inputDevice.value = selectedDeviceName(devices.inputs, preferences.input)
+    outputDevice.value = selectedDeviceName(devices.outputs, preferences.output)
+  }
+
+  private fun selectedDeviceName(devices: List<AudioDevice>, id: Int): String {
+    return devices.firstOrNull { it.id == id }?.name
+      ?: devices.firstOrNull { it.id == 0 }?.name
+      ?: "DEFAULT"
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -72,6 +83,8 @@ class MainActivity : AudioServiceActivity() {
                 textOutput = getString(R.string.output),
                 textMono = getString(R.string.mono),
                 textStereo = getString(R.string.stereo),
+                inputDevice = inputDevice,
+                outputDevice = outputDevice,
                 channels = channels,
                 onSelectInputDevice = { onSelectInputDevice() },
                 onSelectOutputDevice = { onSelectOutputDevice() },
@@ -139,12 +152,14 @@ class MainActivity : AudioServiceActivity() {
   private fun onSelectInputDevice() {
     devices.selectInputDevice(preferences.input) {
       preferences.input = it
+      inputDevice.value = selectedDeviceName(devices.inputs, it)
     }
   }
 
   private fun onSelectOutputDevice() {
     devices.selectOutputDevice(preferences.output) {
       preferences.output = it
+      outputDevice.value = selectedDeviceName(devices.outputs, it)
     }
   }
 
@@ -156,4 +171,3 @@ class MainActivity : AudioServiceActivity() {
   }
 
 }
-
