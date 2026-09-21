@@ -75,8 +75,10 @@ class MainActivity : AudioServiceActivity() {
   private val draftManualEffects = mutableStateOf(false)
   private val draftPitchDynamic = mutableStateOf(false)
   private val draftPitchRange = mutableStateOf(0.1)
+  private val draftPitchInterval = mutableStateOf(1.0)
   private val draftTimbreDynamic = mutableStateOf(false)
   private val draftTimbreRange = mutableStateOf(0.1)
+  private val draftTimbreInterval = mutableStateOf(1.0)
   private val liveState = mutableStateOf(false)
   private val recordingState = mutableStateOf(false)
   private val inputDevice = mutableStateOf("DEFAULT")
@@ -161,25 +163,33 @@ class MainActivity : AudioServiceActivity() {
               milliseconds = getString(R.string.milliseconds),
               pitchName = getString(R.string.pitch),
               pitchRangeName = getString(R.string.pitch_range),
+              pitchIntervalName = getString(R.string.pitch_interval),
               timbreName = getString(R.string.timbre),
               timbreRangeName = getString(R.string.timbre_range),
+              timbreIntervalName = getString(R.string.timbre_interval),
               semitones = getString(R.string.semitones),
+              seconds = getString(R.string.seconds),
+              intervalRangeText = getString(R.string.dynamic_interval_range),
               manualRangeText = getString(R.string.effects_manual_range),
               delay = draftDelay,
               pitch = draftPitch,
               pitchDynamic = draftPitchDynamic,
               pitchRange = draftPitchRange,
+              pitchInterval = draftPitchInterval,
               timbre = draftTimbre,
               timbreDynamic = draftTimbreDynamic,
               timbreRange = draftTimbreRange,
+              timbreInterval = draftTimbreInterval,
               manualMode = draftManualEffects,
               onDelayChange = { draftDelay.intValue = it },
               onPitchChange = { setDraftPitch(it) },
               onPitchDynamicChange = { setDraftPitchDynamic(it) },
               onPitchRangeChange = { setDraftPitchRange(it) },
+              onPitchIntervalChange = { setDraftPitchInterval(it) },
               onTimbreChange = { setDraftTimbre(it) },
               onTimbreDynamicChange = { setDraftTimbreDynamic(it) },
               onTimbreRangeChange = { setDraftTimbreRange(it) },
+              onTimbreIntervalChange = { setDraftTimbreInterval(it) },
               onModeChange = { onSelectDraftEffectMode(it) },
               onSave = { saveSettings() })
           } else {
@@ -487,8 +497,10 @@ class MainActivity : AudioServiceActivity() {
     draftManualEffects.value = manualEffects.value
     draftPitchDynamic.value = preferences.pitchDynamic
     draftPitchRange.value = preferences.pitchRange
+    draftPitchInterval.value = preferences.pitchInterval
     draftTimbreDynamic.value = preferences.timbreDynamic
     draftTimbreRange.value = preferences.timbreRange
+    draftTimbreInterval.value = preferences.timbreInterval
     normalizePitchRange()
     normalizeTimbreRange()
     settingsOpen.value = true
@@ -560,6 +572,18 @@ class MainActivity : AudioServiceActivity() {
     }
   }
 
+  private fun setDraftPitchInterval(value: Double) {
+    if (draftPitchDynamic.value && value in 1.0..5.0) {
+      draftPitchInterval.value = value
+    }
+  }
+
+  private fun setDraftTimbreInterval(value: Double) {
+    if (draftTimbreDynamic.value && value in 1.0..5.0) {
+      draftTimbreInterval.value = value
+    }
+  }
+
   private fun onSelectDraftEffectMode(manual: Boolean) {
     if (!manual) {
       setDraftPitch(draftPitch.value.roundToInt().coerceIn(-12, 12).toDouble())
@@ -586,8 +610,10 @@ class MainActivity : AudioServiceActivity() {
     preferences.manualEffects = draftManualEffects.value
     preferences.pitchDynamic = draftPitchDynamic.value
     preferences.pitchRange = draftPitchRange.value
+    preferences.pitchInterval = draftPitchInterval.value.coerceIn(1.0, 5.0)
     preferences.timbreDynamic = draftTimbreDynamic.value
     preferences.timbreRange = draftTimbreRange.value
+    preferences.timbreInterval = draftTimbreInterval.value.coerceIn(1.0, 5.0)
 
     settingsOpen.value = false
   }
