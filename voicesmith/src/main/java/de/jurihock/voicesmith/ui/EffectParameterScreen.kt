@@ -49,6 +49,80 @@ fun EffectModeSwitchScreen(modifier: Modifier = Modifier,
   }
 }
 
+
+@Composable
+fun DynamicRangeScreen(modifier: Modifier = Modifier,
+                       name: String,
+                       unit: String,
+                       textStatic: String,
+                       textDynamic: String,
+                       allowedRangePrefix: String,
+                       unavailableText: String,
+                       dynamic: State<Boolean>,
+                       value: State<Double>,
+                       maxRange: Double,
+                       minRange: Double = 0.1,
+                       onDynamicChange: (dynamic: Boolean) -> Unit,
+                       onRangeChange: (value: Double) -> Unit) {
+
+  val dynamicAvailable = maxRange >= minRange
+  val fieldEnabled = dynamic.value && dynamicAvailable
+
+  var text by remember(value.value) {
+    mutableStateOf(formatDecimal(value.value))
+  }
+
+  val parsed = parseDecimal(text)
+  val isError = fieldEnabled &&
+    (parsed == null || parsed < minRange || parsed > maxRange)
+
+  Column(modifier = modifier.fillMaxWidth()) {
+    Row(
+      modifier = Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.Center,
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Text(text = textStatic)
+      Spacer(modifier = Modifier.width(Dp(UI.PADDING)))
+      Switch(
+        checked = dynamic.value && dynamicAvailable,
+        enabled = dynamicAvailable,
+        onCheckedChange = onDynamicChange)
+      Spacer(modifier = Modifier.width(Dp(UI.PADDING)))
+      Text(text = textDynamic)
+    }
+
+    Spacer(modifier = Modifier.width(Dp(UI.PADDING)))
+
+    OutlinedTextField(
+      modifier = Modifier.fillMaxWidth(),
+      value = text,
+      onValueChange = { newText ->
+        text = newText
+        parseDecimal(newText)
+          ?.takeIf { it >= minRange && it <= maxRange }
+          ?.let { newValue ->
+            if (newValue != value.value) {
+              onRangeChange(newValue)
+            }
+          }
+      },
+      enabled = fieldEnabled,
+      singleLine = true,
+      isError = isError,
+      label = { Text(text = "${name} (${unit})") },
+      supportingText = {
+        Text(
+          text = if (dynamicAvailable) {
+            "${allowedRangePrefix} ${formatDecimal(maxRange)} ${unit}"
+          } else {
+            unavailableText
+          })
+      },
+      keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text))
+  }
+}
+
 @Composable
 fun SemitoneSliderScreen(modifier: Modifier = Modifier,
                          name: String,
