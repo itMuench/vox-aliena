@@ -7,7 +7,7 @@ import kotlin.math.roundToLong
 import kotlin.random.Random
 
 internal fun dynamicIntervalMillis(seconds: Double): Long {
-  return (seconds.coerceIn(1.0, 5.0) * 1000.0).roundToLong()
+  return (seconds.coerceIn(0.5, 5.0) * 1000.0).roundToLong()
 }
 
 internal class DynamicEffectRandomWalk(

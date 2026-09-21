@@ -86,7 +86,7 @@ fun DynamicRangeScreen(modifier: Modifier = Modifier,
     (parsed == null || parsed < minRange || parsed > maxRange)
   val parsedInterval = parseDecimal(intervalText)
   val intervalIsError = fieldEnabled &&
-    (parsedInterval == null || parsedInterval < 1.0 || parsedInterval > 5.0)
+    (parsedInterval == null || parsedInterval < 0.5 || parsedInterval > 5.0)
 
   Column(modifier = modifier.fillMaxWidth()) {
     Row(
@@ -141,7 +141,7 @@ fun DynamicRangeScreen(modifier: Modifier = Modifier,
       onValueChange = { newText ->
         intervalText = newText
         parseDecimal(newText)
-          ?.takeIf { it in 1.0..5.0 }
+          ?.takeIf { it in 0.5..5.0 }
           ?.let { newValue ->
             if (newValue != interval.value) {
               onIntervalChange(newValue)

@@ -13,7 +13,7 @@
   <string name="effect_mode_dynamic">DYNAMISCH</string>
   <string name="dynamic_range_prefix">Wert von 0,1 bis maximal</string>
   <string name="dynamic_range_unavailable">Keine dynamische Range möglich. Der Basiswert liegt zu nah an ±12.</string>
-  <string name="dynamic_interval_range">Wert von 1,0 bis 5,0 Sekunden möglich</string>
+  <string name="dynamic_interval_range">Wert von 0,5 bis 5,0 Sekunden möglich</string>
   <string name="effects_show">EFFEKTE ANZEIGEN</string>
   <string name="input">Input</string>
   <string name="milliseconds">ms</string>
