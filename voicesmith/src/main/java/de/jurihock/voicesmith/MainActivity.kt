@@ -84,6 +84,7 @@ class MainActivity : AudioServiceActivity() {
       setContent {
         MainTheme {
           val audioActive = liveState.value || recordingState.value
+          val distortionConfigured = pitch.intValue != 0 || timbre.intValue != 0
 
           Scaffold(
             modifier = Modifier.fillMaxSize(),
@@ -115,7 +116,7 @@ class MainActivity : AudioServiceActivity() {
                   textOn = getString(R.string.start_recording),
                   textOff = getString(R.string.stop),
                   value = recordingState,
-                  enabled = !liveState.value,
+                  enabled = !liveState.value && (recordingState.value || distortionConfigured),
                   onToggle = { onStartStopRecordingAudioService() })
               }
             }) { padding ->
@@ -144,6 +145,7 @@ class MainActivity : AudioServiceActivity() {
                 IntParameterScreen(
                   name = getString(R.string.pitch), unit = getString(R.string.semitones), value = pitch,
                   min = -12, max = +12, inc = 1,
+                  enabled = !recordingState.value,
                   onChange = {
                     pitch.intValue = it
                     preferences.pitch = it
@@ -152,6 +154,7 @@ class MainActivity : AudioServiceActivity() {
                 IntParameterScreen(
                   name = getString(R.string.timbre), unit = getString(R.string.semitones), value = timbre,
                   min = -12, max = +12, inc = 1,
+                  enabled = !recordingState.value,
                   onChange = {
                     timbre.intValue = it
                     preferences.timbre = it
