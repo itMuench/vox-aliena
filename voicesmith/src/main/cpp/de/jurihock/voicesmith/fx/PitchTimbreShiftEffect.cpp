@@ -44,7 +44,7 @@ void PitchTimbreShiftEffect::reset(const float samplerate, const size_t blocksiz
 
   state.fft = std::make_shared<FFT>(std::get<0>(winsize));
   state.stft = std::make_unique<stftpitchshift::STFT<fft_t>>(state.fft, winsize, hopsize);
-  state.core = std::make_unique<stftpitchshift::StftPitchShiftCore<fft_t>>(state.fft, winsize, hopsize, samplerate);
+  state.core = std::make_unique<TimbreSafeStftPitchShiftCore<fft_t>>(state.fft, winsize, hopsize, samplerate);
 
   state.core->normalization(params.normalization);
   state.core->quefrency(params.quefrency[params.timbre != 1]);
