@@ -50,7 +50,12 @@ private:
     std::shared_ptr<AudioPipeline> pipeline;
     std::shared_ptr<AudioSource> recordingSource;
     std::shared_ptr<Mp3Recorder> recorder;
-    std::shared_ptr<StereoChainEffect<DelayEffect, PitchTimbreShiftEffect>> effects;
+
+    // Live mode uses Delay + Pitch/Timbre.
+    std::shared_ptr<StereoChainEffect<DelayEffect, PitchTimbreShiftEffect>> liveEffects;
+
+    // MP3 recording intentionally ignores Delay.
+    std::shared_ptr<StereoChainEffect<PitchTimbreShiftEffect>> recordingEffects;
 
   } state;
 
