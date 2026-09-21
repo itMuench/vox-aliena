@@ -19,6 +19,9 @@ jobs:
         java-version: '21'
         distribution: 'oracle'
 
+    - name: Test
+      run: ./gradlew testReleaseUnitTest
+
     - name: Build
       run: ./gradlew assembleRelease
 

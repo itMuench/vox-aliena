@@ -7,6 +7,14 @@ import de.jurihock.voicesmith.io.AudioFeatures
 
 class Main : Application() {
 
+  private fun diagnostics(name: String, block: () -> Unit) {
+    try {
+      block()
+    } catch (exception: Exception) {
+      Log.e("Unable to collect $name diagnostics!", exception)
+    }
+  }
+
   private fun features() {
     val features = AudioFeatures(this)
     Log.i("~ Features ~")
@@ -30,8 +38,8 @@ class Main : Application() {
 
   override fun onCreate() {
     super.onCreate()
-    features()
-    devices()
+    diagnostics("audio feature") { features() }
+    diagnostics("audio device") { devices() }
   }
 
 }

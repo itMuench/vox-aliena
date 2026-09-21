@@ -30,6 +30,23 @@ class AudioDevices(val context: Context) {
 
 }
 
+internal fun formatAudioDeviceName(
+  id: Int,
+  type: Int,
+  productName: CharSequence,
+  address: String,
+  types: Map<Int, String>
+): String {
+  val typeName = types[type]
+  val fallbackName = productName.toString().ifBlank { "TYPE $type" }
+  return listOf(
+    typeName ?: fallbackName,
+    if (typeName != null) address else "#$id")
+    .filter { it.isNotEmpty() }
+    .joinToString(" ")
+    .uppercase()
+}
+
 fun AudioManager.getAudioDevices(flags: Int, types: Map<Int, String>) : List<AudioDevice> {
   return getDevices(flags).let { devices ->
     devices
@@ -37,11 +54,12 @@ fun AudioManager.getAudioDevices(flags: Int, types: Map<Int, String>) : List<Aud
       .map { device ->
         AudioDevice(
           device.id,
-          listOf(types.getOrDefault(device.type, device.productName),
-                 if (types.contains(device.type)) device.address else "#${device.id}")
-            .filter { it.isNotEmpty() }
-            .joinToString(" ")
-            .uppercase(),
+          formatAudioDeviceName(
+            device.id,
+            device.type,
+            device.productName,
+            device.address,
+            types),
           device.sampleRates.sorted(),
           device.channelCounts.sorted())
       }
