@@ -12,6 +12,13 @@
   <uses-permission android:name="android.permission.RECORD_AUDIO" />
   <uses-permission android:name="android.permission.VIBRATE" />
 
+  <queries>
+    <intent>
+      <action android:name="android.intent.action.SEND" />
+      <data android:mimeType="audio/mpeg" />
+    </intent>
+  </queries>
+
   <application android:name="de.jurihock.voicesmith.Main"
                android:label="@string/title"
                android:icon="@drawable/voicesmith"
@@ -28,6 +35,9 @@
     <service android:name="de.jurihock.voicesmith.service.AudioService"
              android:foregroundServiceType="microphone"
              android:exported="false" />
+
+    <receiver android:name="de.jurihock.voicesmith.ShareTargetChosenReceiver"
+              android:exported="false" />
 
     <provider android:name="androidx.core.content.FileProvider"
               android:authorities="${applicationId}.files"

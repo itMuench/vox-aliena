@@ -1,9 +1,11 @@
 package de.jurihock.voicesmith.ui
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -24,8 +26,10 @@ fun RecordingItemScreen(modifier: Modifier = Modifier,
                         isPlaying: Boolean,
                         textShare: String,
                         textDelete: String,
+                        quickShareTarget: String?,
                         onPlayPause: () -> Unit,
                         onShare: () -> Unit,
+                        onQuickShare: () -> Unit,
                         onDelete: () -> Unit) {
 
   val menuExpanded = remember { mutableStateOf(false) }
@@ -49,6 +53,20 @@ fun RecordingItemScreen(modifier: Modifier = Modifier,
 
       OutlinedButton(onClick = onShare) {
         Text(text = textShare)
+      }
+
+      if (quickShareTarget != null) {
+        OutlinedButton(
+          modifier = Modifier
+            .padding(start = Dp(UI.PADDING / 2))
+            .widthIn(max = Dp(UI.PADDING * 7)),
+          contentPadding = PaddingValues(horizontal = Dp(UI.PADDING / 2)),
+          onClick = onQuickShare) {
+          Text(
+            text = quickShareTarget,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis)
+        }
       }
 
       Box {
