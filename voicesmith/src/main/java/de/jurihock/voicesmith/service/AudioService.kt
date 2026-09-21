@@ -4,7 +4,9 @@ import android.app.Service
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Environment
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import de.jurihock.voicesmith.etc.Log
 import de.jurihock.voicesmith.etc.Preferences
 import de.jurihock.voicesmith.plug.AudioPlugin
@@ -25,6 +27,30 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
   private var error: ((exception: Throwable) -> Unit)? = null
   private var plugin: AudioPlugin? = null
   private var recordingFile: File? = null
+
+  private val dynamicHandler = Handler(Looper.getMainLooper())
+  private val pitchWalk = DynamicEffectRandomWalk()
+  private val timbreWalk = DynamicEffectRandomWalk()
+
+  private val dynamicUpdate = object : Runnable {
+    override fun run() {
+      if (mode == AudioServiceMode.STOPPED) {
+        return
+      }
+
+      try {
+        pitchWalk.next()?.let { plugin?.set("pitch", it.toString()) }
+        timbreWalk.next()?.let { plugin?.set("timbre", it.toString()) }
+      } catch (exception: Throwable) {
+        onPluginError(exception)
+        return
+      }
+
+      if (pitchWalk.isEnabled || timbreWalk.isEnabled) {
+        dynamicHandler.postDelayed(this, DYNAMIC_UPDATE_INTERVAL_MS)
+      }
+    }
+  }
 
   var mode: AudioServiceMode = AudioServiceMode.STOPPED
     private set
@@ -75,8 +101,10 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
     }
 
     Log.i("Starting live audio plugin")
+    prepareDynamicEffects()
     requireNotNull(plugin) { "Audio plugin is unavailable!" }.start()
     mode = AudioServiceMode.LIVE
+    scheduleDynamicEffects()
   }
 
   fun startRecording(): File {
@@ -93,10 +121,12 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
 
     Log.i("Starting MP3 recording to ${file.absolutePath}")
     try {
+      prepareDynamicEffects()
       requireNotNull(plugin) { "Audio plugin is unavailable!" }
         .startRecording(file.absolutePath)
       recordingFile = file
       mode = AudioServiceMode.RECORDING
+      scheduleDynamicEffects()
       return file
     } catch (exception: Throwable) {
       file.delete()
@@ -106,6 +136,7 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
 
   fun stop(): File? {
     Log.i("Stopping audio plugin")
+    stopDynamicEffects()
 
     val finishedRecording =
       if (mode == AudioServiceMode.RECORDING) recordingFile else null
@@ -146,6 +177,7 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
     preferences.unregister(this)
 
     Log.i("Destroying audio service")
+    stopDynamicEffects()
     try {
       plugin?.close()
       plugin = null
@@ -172,6 +204,35 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
         plugin?.set("timbre", preferences.timbre.toString())
       }
     }
+  }
+
+  private fun prepareDynamicEffects() {
+    stopDynamicEffects()
+
+    val pitchBase = preferences.pitch
+    val timbreBase = preferences.timbre
+
+    pitchWalk.configure(
+      baseValue = pitchBase,
+      configuredRange = preferences.pitchRange,
+      dynamic = preferences.pitchDynamic)
+    timbreWalk.configure(
+      baseValue = timbreBase,
+      configuredRange = preferences.timbreRange,
+      dynamic = preferences.timbreDynamic)
+
+    plugin?.set("pitch", pitchBase.toString())
+    plugin?.set("timbre", timbreBase.toString())
+  }
+
+  private fun scheduleDynamicEffects() {
+    if (pitchWalk.isEnabled || timbreWalk.isEnabled) {
+      dynamicHandler.postDelayed(dynamicUpdate, DYNAMIC_UPDATE_INTERVAL_MS)
+    }
+  }
+
+  private fun stopDynamicEffects() {
+    dynamicHandler.removeCallbacks(dynamicUpdate)
   }
 
   fun onServiceError(callback: (exception: Throwable) -> Unit) {
@@ -207,6 +268,7 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
   }
 
   private fun onPluginError(exception: Throwable) {
+    stopDynamicEffects()
     try {
       plugin?.stop()
     } catch (stopException: Throwable) {
@@ -219,6 +281,10 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
       recordingFile = null
       error?.invoke(exception)
     }
+  }
+
+  private companion object {
+    const val DYNAMIC_UPDATE_INTERVAL_MS = 1000L
   }
 
 }
