@@ -48,6 +48,7 @@ import de.jurihock.voicesmith.ui.RecordingItemScreen
 import de.jurihock.voicesmith.ui.SettingsScreen
 import de.jurihock.voicesmith.ui.UI
 import java.io.File
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 class MainActivity : AudioServiceActivity() {
@@ -67,6 +68,10 @@ class MainActivity : AudioServiceActivity() {
   private val draftPitch = mutableStateOf(0.0)
   private val draftTimbre = mutableStateOf(0.0)
   private val draftManualEffects = mutableStateOf(false)
+  private val draftPitchDynamic = mutableStateOf(false)
+  private val draftPitchRange = mutableStateOf(0.1)
+  private val draftTimbreDynamic = mutableStateOf(false)
+  private val draftTimbreRange = mutableStateOf(0.1)
   private val liveState = mutableStateOf(false)
   private val recordingState = mutableStateOf(false)
   private val inputDevice = mutableStateOf("DEFAULT")
@@ -141,19 +146,33 @@ class MainActivity : AudioServiceActivity() {
               saveText = getString(R.string.settings_save),
               textSlider = getString(R.string.effects_mode_slider),
               textManual = getString(R.string.effects_mode_manual),
+              textStatic = getString(R.string.effect_mode_static),
+              textDynamic = getString(R.string.effect_mode_dynamic),
+              dynamicRangePrefix = getString(R.string.dynamic_range_prefix),
+              dynamicRangeUnavailable = getString(R.string.dynamic_range_unavailable),
               delayName = getString(R.string.delay),
               milliseconds = getString(R.string.milliseconds),
               pitchName = getString(R.string.pitch),
+              pitchRangeName = getString(R.string.pitch_range),
               timbreName = getString(R.string.timbre),
+              timbreRangeName = getString(R.string.timbre_range),
               semitones = getString(R.string.semitones),
               manualRangeText = getString(R.string.effects_manual_range),
               delay = draftDelay,
               pitch = draftPitch,
+              pitchDynamic = draftPitchDynamic,
+              pitchRange = draftPitchRange,
               timbre = draftTimbre,
+              timbreDynamic = draftTimbreDynamic,
+              timbreRange = draftTimbreRange,
               manualMode = draftManualEffects,
               onDelayChange = { draftDelay.intValue = it },
-              onPitchChange = { draftPitch.value = it },
-              onTimbreChange = { draftTimbre.value = it },
+              onPitchChange = { setDraftPitch(it) },
+              onPitchDynamicChange = { setDraftPitchDynamic(it) },
+              onPitchRangeChange = { setDraftPitchRange(it) },
+              onTimbreChange = { setDraftTimbre(it) },
+              onTimbreDynamicChange = { setDraftTimbreDynamic(it) },
+              onTimbreRangeChange = { setDraftTimbreRange(it) },
               onModeChange = { onSelectDraftEffectMode(it) },
               onSave = { saveSettings() })
           } else {
@@ -441,6 +460,12 @@ class MainActivity : AudioServiceActivity() {
     draftPitch.value = pitch.value
     draftTimbre.value = timbre.value
     draftManualEffects.value = manualEffects.value
+    draftPitchDynamic.value = preferences.pitchDynamic
+    draftPitchRange.value = preferences.pitchRange
+    draftTimbreDynamic.value = preferences.timbreDynamic
+    draftTimbreRange.value = preferences.timbreRange
+    normalizePitchRange()
+    normalizeTimbreRange()
     settingsOpen.value = true
   }
 
@@ -448,16 +473,81 @@ class MainActivity : AudioServiceActivity() {
     settingsOpen.value = false
   }
 
+  private fun maxDynamicRange(value: Double): Double {
+    return (12.0 - abs(value)).coerceAtLeast(0.0)
+  }
+
+  private fun normalizePitchRange() {
+    val maxRange = maxDynamicRange(draftPitch.value)
+    if (maxRange < 0.1) {
+      draftPitchDynamic.value = false
+      draftPitchRange.value = 0.1
+      return
+    }
+
+    draftPitchRange.value = draftPitchRange.value.coerceIn(0.1, maxRange)
+  }
+
+  private fun normalizeTimbreRange() {
+    val maxRange = maxDynamicRange(draftTimbre.value)
+    if (maxRange < 0.1) {
+      draftTimbreDynamic.value = false
+      draftTimbreRange.value = 0.1
+      return
+    }
+
+    draftTimbreRange.value = draftTimbreRange.value.coerceIn(0.1, maxRange)
+  }
+
+  private fun setDraftPitch(value: Double) {
+    draftPitch.value = value
+    normalizePitchRange()
+  }
+
+  private fun setDraftTimbre(value: Double) {
+    draftTimbre.value = value
+    normalizeTimbreRange()
+  }
+
+  private fun setDraftPitchDynamic(dynamic: Boolean) {
+    val maxRange = maxDynamicRange(draftPitch.value)
+    draftPitchDynamic.value = dynamic && maxRange >= 0.1
+    normalizePitchRange()
+  }
+
+  private fun setDraftTimbreDynamic(dynamic: Boolean) {
+    val maxRange = maxDynamicRange(draftTimbre.value)
+    draftTimbreDynamic.value = dynamic && maxRange >= 0.1
+    normalizeTimbreRange()
+  }
+
+  private fun setDraftPitchRange(value: Double) {
+    val maxRange = maxDynamicRange(draftPitch.value)
+    if (draftPitchDynamic.value && maxRange >= 0.1 && value in 0.1..maxRange) {
+      draftPitchRange.value = value
+    }
+  }
+
+  private fun setDraftTimbreRange(value: Double) {
+    val maxRange = maxDynamicRange(draftTimbre.value)
+    if (draftTimbreDynamic.value && maxRange >= 0.1 && value in 0.1..maxRange) {
+      draftTimbreRange.value = value
+    }
+  }
+
   private fun onSelectDraftEffectMode(manual: Boolean) {
     if (!manual) {
-      draftPitch.value = draftPitch.value.roundToInt().coerceIn(-12, 12).toDouble()
-      draftTimbre.value = draftTimbre.value.roundToInt().coerceIn(-12, 12).toDouble()
+      setDraftPitch(draftPitch.value.roundToInt().coerceIn(-12, 12).toDouble())
+      setDraftTimbre(draftTimbre.value.roundToInt().coerceIn(-12, 12).toDouble())
     }
 
     draftManualEffects.value = manual
   }
 
   private fun saveSettings() {
+    normalizePitchRange()
+    normalizeTimbreRange()
+
     delay.intValue = draftDelay.intValue
     pitch.value = draftPitch.value
     timbre.value = draftTimbre.value
@@ -467,6 +557,10 @@ class MainActivity : AudioServiceActivity() {
     preferences.pitch = draftPitch.value
     preferences.timbre = draftTimbre.value
     preferences.manualEffects = draftManualEffects.value
+    preferences.pitchDynamic = draftPitchDynamic.value
+    preferences.pitchRange = draftPitchRange.value
+    preferences.timbreDynamic = draftTimbreDynamic.value
+    preferences.timbreRange = draftTimbreRange.value
 
     settingsOpen.value = false
   }

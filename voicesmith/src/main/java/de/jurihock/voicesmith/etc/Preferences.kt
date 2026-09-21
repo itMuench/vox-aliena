@@ -56,6 +56,22 @@ class Preferences(context: Context) {
     get() { return preferences.getBoolean(::manualEffects.name, false) }
     set(value) { preferences.edit().putBoolean(::manualEffects.name, value).commit() }
 
+  var pitchDynamic: Boolean
+    get() { return preferences.getBoolean(::pitchDynamic.name, false) }
+    set(value) { preferences.edit().putBoolean(::pitchDynamic.name, value).commit() }
+
+  var pitchRange: Double
+    get() { return getDouble(::pitchRange.name).takeIf { it > 0.0 } ?: 0.1 }
+    set(value) { putDouble(::pitchRange.name, value) }
+
+  var timbreDynamic: Boolean
+    get() { return preferences.getBoolean(::timbreDynamic.name, false) }
+    set(value) { preferences.edit().putBoolean(::timbreDynamic.name, value).commit() }
+
+  var timbreRange: Double
+    get() { return getDouble(::timbreRange.name).takeIf { it > 0.0 } ?: 0.1 }
+    set(value) { putDouble(::timbreRange.name, value) }
+
   var lastShareTarget: String?
     get() { return preferences.getString(::lastShareTarget.name, null) }
     set(value) {

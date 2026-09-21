@@ -9,6 +9,10 @@
   <string name="effects_manual_range">Wert von -12,0 bis +12,0 möglich</string>
   <string name="effects_mode_manual">MANUELL</string>
   <string name="effects_mode_slider">SLIDER</string>
+  <string name="effect_mode_static">STATISCH</string>
+  <string name="effect_mode_dynamic">DYNAMISCH</string>
+  <string name="dynamic_range_prefix">Wert von 0,1 bis maximal</string>
+  <string name="dynamic_range_unavailable">Keine dynamische Range möglich. Der Basiswert liegt zu nah an ±12.</string>
   <string name="effects_show">EFFEKTE ANZEIGEN</string>
   <string name="input">Input</string>
   <string name="milliseconds">ms</string>
@@ -19,6 +23,7 @@
   <string name="permissions_rationale_text">Microphone permission must be granted in order to use Voicesmith!</string>
   <string name="permissions_rationale_title">Permissions missing</string>
   <string name="pitch">Pitch</string>
+  <string name="pitch_range">Pitch Range</string>
   <string name="play_recording_failed">Die MP3-Aufnahme konnte nicht abgespielt werden.</string>
   <string name="recording_delete">Löschen</string>
   <string name="recording_finalize_failed">Die MP3-Aufnahme konnte nicht fertiggestellt werden. Es wurde keine abspielbare Datei erzeugt.</string>
@@ -37,6 +42,7 @@
   <string name="stereo">S</string>
   <string name="stop">STOP</string>
   <string name="timbre">Timbre</string>
+  <string name="timbre_range">Timbre Range</string>
   <string name="title">Vox Aliena</string>
   <string name="title_with_version">Vox Aliena v%s</string>
 </resources>
