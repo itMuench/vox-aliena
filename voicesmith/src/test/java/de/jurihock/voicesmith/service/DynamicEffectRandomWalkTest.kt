@@ -10,13 +10,15 @@ class DynamicEffectRandomWalkTest {
 
   @Test
   fun convertsDecimalDynamicIntervalsToMilliseconds() {
+    assertEquals(500L, dynamicIntervalMillis(0.5))
+    assertEquals(750L, dynamicIntervalMillis(0.75))
     assertEquals(1200L, dynamicIntervalMillis(1.2))
     assertEquals(3456L, dynamicIntervalMillis(3.456))
   }
 
   @Test
-  fun clampsDynamicIntervalsToOneThroughFiveSeconds() {
-    assertEquals(1000L, dynamicIntervalMillis(0.2))
+  fun clampsDynamicIntervalsToHalfThroughFiveSeconds() {
+    assertEquals(500L, dynamicIntervalMillis(0.2))
     assertEquals(5000L, dynamicIntervalMillis(7.0))
   }
 
