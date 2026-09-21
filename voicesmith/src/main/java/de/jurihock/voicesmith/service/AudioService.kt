@@ -35,26 +35,16 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
   private val pitchWalk = DynamicEffectRandomWalk()
   private val timbreWalk = DynamicEffectRandomWalk()
 
-  private val dynamicUpdate = object : Runnable {
+  private val pitchDynamicUpdate = object : Runnable {
     override fun run() {
-      if (mode == AudioServiceMode.STOPPED) {
+      if (mode == AudioServiceMode.STOPPED || !pitchWalk.isEnabled) {
         return
       }
 
       try {
-        val nextPitch = pitchWalk.next()
-        val nextTimbre = timbreWalk.next()
-
-        if (nextPitch != null) {
+        pitchWalk.next()?.let { nextPitch ->
           plugin?.set("pitch", nextPitch.toString())
           currentPitch = nextPitch
-        }
-        if (nextTimbre != null) {
-          plugin?.set("timbre", nextTimbre.toString())
-          currentTimbre = nextTimbre
-        }
-
-        if (nextPitch != null || nextTimbre != null) {
           notifyEffectValuesChanged()
         }
       } catch (exception: Throwable) {
@@ -62,8 +52,35 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
         return
       }
 
-      if (pitchWalk.isEnabled || timbreWalk.isEnabled) {
-        dynamicHandler.postDelayed(this, DYNAMIC_UPDATE_INTERVAL_MS)
+      if (pitchWalk.isEnabled) {
+        dynamicHandler.postDelayed(
+          this,
+          dynamicIntervalMillis(preferences.pitchInterval))
+      }
+    }
+  }
+
+  private val timbreDynamicUpdate = object : Runnable {
+    override fun run() {
+      if (mode == AudioServiceMode.STOPPED || !timbreWalk.isEnabled) {
+        return
+      }
+
+      try {
+        timbreWalk.next()?.let { nextTimbre ->
+          plugin?.set("timbre", nextTimbre.toString())
+          currentTimbre = nextTimbre
+          notifyEffectValuesChanged()
+        }
+      } catch (exception: Throwable) {
+        onPluginError(exception)
+        return
+      }
+
+      if (timbreWalk.isEnabled) {
+        dynamicHandler.postDelayed(
+          this,
+          dynamicIntervalMillis(preferences.timbreInterval))
       }
     }
   }
@@ -251,13 +268,21 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
   }
 
   private fun scheduleDynamicEffects() {
-    if (pitchWalk.isEnabled || timbreWalk.isEnabled) {
-      dynamicHandler.postDelayed(dynamicUpdate, DYNAMIC_UPDATE_INTERVAL_MS)
+    if (pitchWalk.isEnabled) {
+      dynamicHandler.postDelayed(
+        pitchDynamicUpdate,
+        dynamicIntervalMillis(preferences.pitchInterval))
+    }
+    if (timbreWalk.isEnabled) {
+      dynamicHandler.postDelayed(
+        timbreDynamicUpdate,
+        dynamicIntervalMillis(preferences.timbreInterval))
     }
   }
 
   private fun stopDynamicEffects() {
-    dynamicHandler.removeCallbacks(dynamicUpdate)
+    dynamicHandler.removeCallbacks(pitchDynamicUpdate)
+    dynamicHandler.removeCallbacks(timbreDynamicUpdate)
   }
 
   fun onEffectValuesChanged(callback: (pitch: Double, timbre: Double) -> Unit) {
@@ -311,10 +336,6 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
       recordingFile = null
       error?.invoke(exception)
     }
-  }
-
-  private companion object {
-    const val DYNAMIC_UPDATE_INTERVAL_MS = 1000L
   }
 
 }

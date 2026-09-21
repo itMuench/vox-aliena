@@ -64,6 +64,10 @@ class Preferences(context: Context) {
     get() { return getDouble(::pitchRange.name).takeIf { it > 0.0 } ?: 0.1 }
     set(value) { putDouble(::pitchRange.name, value) }
 
+  var pitchInterval: Double
+    get() { return getDouble(::pitchInterval.name).takeIf { it in 1.0..5.0 } ?: 1.0 }
+    set(value) { putDouble(::pitchInterval.name, value.coerceIn(1.0, 5.0)) }
+
   var timbreDynamic: Boolean
     get() { return preferences.getBoolean(::timbreDynamic.name, false) }
     set(value) { preferences.edit().putBoolean(::timbreDynamic.name, value).commit() }
@@ -71,6 +75,10 @@ class Preferences(context: Context) {
   var timbreRange: Double
     get() { return getDouble(::timbreRange.name).takeIf { it > 0.0 } ?: 0.1 }
     set(value) { putDouble(::timbreRange.name, value) }
+
+  var timbreInterval: Double
+    get() { return getDouble(::timbreInterval.name).takeIf { it in 1.0..5.0 } ?: 1.0 }
+    set(value) { putDouble(::timbreInterval.name, value.coerceIn(1.0, 5.0)) }
 
   var lastShareTarget: String?
     get() { return preferences.getString(::lastShareTarget.name, null) }
