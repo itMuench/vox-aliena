@@ -10,6 +10,7 @@ import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.Environment
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -42,12 +43,9 @@ import de.jurihock.voicesmith.io.selectOutputDevice
 import de.jurihock.voicesmith.service.AudioServiceActivity
 import de.jurihock.voicesmith.ui.BigToggleButtonScreen
 import de.jurihock.voicesmith.ui.DeviceSelectorScreen
-import de.jurihock.voicesmith.ui.EffectModeSwitchScreen
-import de.jurihock.voicesmith.ui.IntParameterScreen
 import de.jurihock.voicesmith.ui.MainTheme
-import de.jurihock.voicesmith.ui.ManualSemitoneScreen
 import de.jurihock.voicesmith.ui.RecordingItemScreen
-import de.jurihock.voicesmith.ui.SemitoneSliderScreen
+import de.jurihock.voicesmith.ui.SettingsScreen
 import de.jurihock.voicesmith.ui.UI
 import java.io.File
 import kotlin.math.roundToInt
@@ -64,9 +62,13 @@ class MainActivity : AudioServiceActivity() {
   private val pitch = mutableStateOf(0.0)
   private val timbre = mutableStateOf(0.0)
   private val manualEffects = mutableStateOf(false)
+  private val settingsOpen = mutableStateOf(false)
+  private val draftDelay = mutableIntStateOf(0)
+  private val draftPitch = mutableStateOf(0.0)
+  private val draftTimbre = mutableStateOf(0.0)
+  private val draftManualEffects = mutableStateOf(false)
   private val liveState = mutableStateOf(false)
   private val recordingState = mutableStateOf(false)
-  private val effectsExpanded = mutableStateOf(false)
   private val inputDevice = mutableStateOf("DEFAULT")
   private val outputDevice = mutableStateOf("DEFAULT")
   private val recordings = mutableStateListOf<File>()
@@ -130,6 +132,31 @@ class MainActivity : AudioServiceActivity() {
           val audioActive = liveState.value || recordingState.value
           val distortionConfigured = pitch.value != 0.0 || timbre.value != 0.0
 
+          if (settingsOpen.value) {
+            BackHandler {
+              closeSettings()
+            }
+            SettingsScreen(
+              title = getString(R.string.settings_title),
+              saveText = getString(R.string.settings_save),
+              textSlider = getString(R.string.effects_mode_slider),
+              textManual = getString(R.string.effects_mode_manual),
+              delayName = getString(R.string.delay),
+              milliseconds = getString(R.string.milliseconds),
+              pitchName = getString(R.string.pitch),
+              timbreName = getString(R.string.timbre),
+              semitones = getString(R.string.semitones),
+              manualRangeText = getString(R.string.effects_manual_range),
+              delay = draftDelay,
+              pitch = draftPitch,
+              timbre = draftTimbre,
+              manualMode = draftManualEffects,
+              onDelayChange = { draftDelay.intValue = it },
+              onPitchChange = { draftPitch.value = it },
+              onTimbreChange = { draftTimbre.value = it },
+              onModeChange = { onSelectDraftEffectMode(it) },
+              onSave = { saveSettings() })
+          } else {
           Scaffold(
             modifier = Modifier.fillMaxSize(),
             topBar = {
@@ -193,79 +220,14 @@ class MainActivity : AudioServiceActivity() {
             Column(modifier = Modifier.padding(padding).padding(Dp(UI.PADDING))) {
               OutlinedButton(
                 modifier = Modifier.fillMaxWidth(),
-                onClick = { effectsExpanded.value = !effectsExpanded.value }) {
-                val indicator = if (effectsExpanded.value) "▼" else "▶"
-                val label = getString(
-                  if (effectsExpanded.value) R.string.effects_hide
-                  else R.string.effects_show)
-                Text(text = "$indicator $label")
-              }
-
-              if (effectsExpanded.value) {
-                Spacer(modifier = Modifier.height(Dp(UI.PADDING)))
-                EffectModeSwitchScreen(
-                  textSlider = getString(R.string.effects_mode_slider),
-                  textManual = getString(R.string.effects_mode_manual),
-                  manualMode = manualEffects,
-                  enabled = !recordingState.value,
-                  onChange = { onSelectEffectMode(it) })
-                Spacer(modifier = Modifier.height(Dp(UI.PADDING)))
-                IntParameterScreen(
-                  name = getString(R.string.delay), unit = getString(R.string.milliseconds), value = delay,
-                  min = 0, max = 1000, inc = 50,
-                  onChange = {
-                    delay.intValue = it
-                    preferences.delay = it
-                  })
-                Spacer(modifier = Modifier.height(Dp(UI.PADDING)))
-
-                if (manualEffects.value) {
-                  ManualSemitoneScreen(
-                    name = getString(R.string.pitch),
-                    unit = getString(R.string.semitones),
-                    value = pitch,
-                    rangeText = getString(R.string.effects_manual_range),
-                    enabled = !recordingState.value,
-                    onChange = {
-                      pitch.value = it
-                      preferences.pitch = it
-                    })
-                  Spacer(modifier = Modifier.height(Dp(UI.PADDING)))
-                  ManualSemitoneScreen(
-                    name = getString(R.string.timbre),
-                    unit = getString(R.string.semitones),
-                    value = timbre,
-                    rangeText = getString(R.string.effects_manual_range),
-                    enabled = !recordingState.value,
-                    onChange = {
-                      timbre.value = it
-                      preferences.timbre = it
-                    })
-                } else {
-                  SemitoneSliderScreen(
-                    name = getString(R.string.pitch),
-                    unit = getString(R.string.semitones),
-                    value = pitch,
-                    enabled = !recordingState.value,
-                    onChange = {
-                      pitch.value = it
-                      preferences.pitch = it
-                    })
-                  Spacer(modifier = Modifier.height(Dp(UI.PADDING)))
-                  SemitoneSliderScreen(
-                    name = getString(R.string.timbre),
-                    unit = getString(R.string.semitones),
-                    value = timbre,
-                    enabled = !recordingState.value,
-                    onChange = {
-                      timbre.value = it
-                      preferences.timbre = it
-                    })
-                }
+                enabled = !audioActive,
+                onClick = { openSettings() }) {
+                Text(text = getString(R.string.settings))
               }
 
               Spacer(modifier = Modifier.weight(1f))
             }
+          }
           }
         }
       }
@@ -474,19 +436,39 @@ class MainActivity : AudioServiceActivity() {
     }
   }
 
-  private fun onSelectEffectMode(manual: Boolean) {
-    if (!manual) {
-      val sliderPitch = pitch.value.roundToInt().coerceIn(-12, 12).toDouble()
-      val sliderTimbre = timbre.value.roundToInt().coerceIn(-12, 12).toDouble()
+  private fun openSettings() {
+    draftDelay.intValue = delay.intValue
+    draftPitch.value = pitch.value
+    draftTimbre.value = timbre.value
+    draftManualEffects.value = manualEffects.value
+    settingsOpen.value = true
+  }
 
-      pitch.value = sliderPitch
-      timbre.value = sliderTimbre
-      preferences.pitch = sliderPitch
-      preferences.timbre = sliderTimbre
+  private fun closeSettings() {
+    settingsOpen.value = false
+  }
+
+  private fun onSelectDraftEffectMode(manual: Boolean) {
+    if (!manual) {
+      draftPitch.value = draftPitch.value.roundToInt().coerceIn(-12, 12).toDouble()
+      draftTimbre.value = draftTimbre.value.roundToInt().coerceIn(-12, 12).toDouble()
     }
 
-    manualEffects.value = manual
-    preferences.manualEffects = manual
+    draftManualEffects.value = manual
+  }
+
+  private fun saveSettings() {
+    delay.intValue = draftDelay.intValue
+    pitch.value = draftPitch.value
+    timbre.value = draftTimbre.value
+    manualEffects.value = draftManualEffects.value
+
+    preferences.delay = draftDelay.intValue
+    preferences.pitch = draftPitch.value
+    preferences.timbre = draftTimbre.value
+    preferences.manualEffects = draftManualEffects.value
+
+    settingsOpen.value = false
   }
 
   private fun onSelectInputDevice() {
