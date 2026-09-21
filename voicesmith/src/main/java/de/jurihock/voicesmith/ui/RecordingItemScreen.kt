@@ -8,6 +8,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -46,6 +47,10 @@ fun RecordingItemScreen(modifier: Modifier = Modifier,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis)
 
+      OutlinedButton(onClick = onShare) {
+        Text(text = textShare)
+      }
+
       Box {
         IconButton(onClick = { menuExpanded.value = true }) {
           Text(text = "⋮")
@@ -54,12 +59,6 @@ fun RecordingItemScreen(modifier: Modifier = Modifier,
         DropdownMenu(
           expanded = menuExpanded.value,
           onDismissRequest = { menuExpanded.value = false }) {
-          DropdownMenuItem(
-            text = { Text(textShare) },
-            onClick = {
-              menuExpanded.value = false
-              onShare()
-            })
           DropdownMenuItem(
             text = { Text(textDelete) },
             onClick = {
