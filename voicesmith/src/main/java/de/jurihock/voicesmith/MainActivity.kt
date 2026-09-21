@@ -613,13 +613,13 @@ class MainActivity : AudioServiceActivity() {
   }
 
   private fun setDraftPitchInterval(value: Double) {
-    if (draftPitchDynamic.value && value in 1.0..5.0) {
+    if (draftPitchDynamic.value && value in 0.5..5.0) {
       draftPitchInterval.value = value
     }
   }
 
   private fun setDraftTimbreInterval(value: Double) {
-    if (draftTimbreDynamic.value && value in 1.0..5.0) {
+    if (draftTimbreDynamic.value && value in 0.5..5.0) {
       draftTimbreInterval.value = value
     }
   }
@@ -650,10 +650,10 @@ class MainActivity : AudioServiceActivity() {
     preferences.manualEffects = draftManualEffects.value
     preferences.pitchDynamic = draftPitchDynamic.value
     preferences.pitchRange = draftPitchRange.value
-    preferences.pitchInterval = draftPitchInterval.value.coerceIn(1.0, 5.0)
+    preferences.pitchInterval = draftPitchInterval.value.coerceIn(0.5, 5.0)
     preferences.timbreDynamic = draftTimbreDynamic.value
     preferences.timbreRange = draftTimbreRange.value
-    preferences.timbreInterval = draftTimbreInterval.value.coerceIn(1.0, 5.0)
+    preferences.timbreInterval = draftTimbreInterval.value.coerceIn(0.5, 5.0)
 
     settingsOpen.value = false
   }
