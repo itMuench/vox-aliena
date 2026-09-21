@@ -21,6 +21,6 @@
   <string name="stereo">S</string>
   <string name="stop">STOP</string>
   <string name="timbre">Timbre</string>
-  <string name="title">Voicesmith</string>
-  <string name="title_with_version">Voicesmith v%s</string>
+  <string name="title">Vox Aliena</string>
+  <string name="title_with_version">Vox Aliena v%s</string>
 </resources>
