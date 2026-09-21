@@ -4,9 +4,9 @@
 
 #include <voicesmith/etc/FFT.h>
 #include <voicesmith/fx/AudioEffect.h>
+#include <voicesmith/fx/TimbreSafeStftPitchShiftCore.h>
 
 #include <StftPitchShift/STFT.h>
-#include <StftPitchShift/StftPitchShiftCore.h>
 
 class PitchTimbreShiftEffect final : public AudioEffect {
 
@@ -41,7 +41,7 @@ private:
   struct {
     std::shared_ptr<FFT> fft;
     std::unique_ptr<stftpitchshift::STFT<fft_t>> stft;
-    std::unique_ptr<stftpitchshift::StftPitchShiftCore<fft_t>> core;
+    std::unique_ptr<TimbreSafeStftPitchShiftCore<fft_t>> core;
   } state;
 
   struct {
