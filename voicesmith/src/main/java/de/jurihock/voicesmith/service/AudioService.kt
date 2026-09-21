@@ -348,18 +348,19 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
       throw IllegalStateException("Unable to create recording directory!")
     }
 
-    val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
     val random = SecureRandom().apply {
       setSeed(System.currentTimeMillis())
     }
 
     var file: File
     do {
-      val name = buildString {
-        repeat(12) {
-          append(alphabet[random.nextInt(alphabet.length)])
-        }
-      }
+      val name = generateRecordingFilenameBase(
+        random = random,
+        dynamicLength = preferences.recordingFilenameDynamicLength,
+        fixedLength = preferences.recordingFilenameLength,
+        minLength = preferences.recordingFilenameMinLength,
+        maxLength = preferences.recordingFilenameMaxLength,
+        characters = preferences.recordingFilenameCharacters)
       file = File(directory, "${name}.mp3")
     } while (file.exists())
 
