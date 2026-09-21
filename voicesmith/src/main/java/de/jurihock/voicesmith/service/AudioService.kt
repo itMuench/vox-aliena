@@ -25,8 +25,11 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
   private val preferences by lazy { Preferences(this) }
 
   private var error: ((exception: Throwable) -> Unit)? = null
+  private var effectValuesChanged: ((pitch: Double, timbre: Double) -> Unit)? = null
   private var plugin: AudioPlugin? = null
   private var recordingFile: File? = null
+  private var currentPitch = 0.0
+  private var currentTimbre = 0.0
 
   private val dynamicHandler = Handler(Looper.getMainLooper())
   private val pitchWalk = DynamicEffectRandomWalk()
@@ -39,8 +42,21 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
       }
 
       try {
-        pitchWalk.next()?.let { plugin?.set("pitch", it.toString()) }
-        timbreWalk.next()?.let { plugin?.set("timbre", it.toString()) }
+        val nextPitch = pitchWalk.next()
+        val nextTimbre = timbreWalk.next()
+
+        if (nextPitch != null) {
+          plugin?.set("pitch", nextPitch.toString())
+          currentPitch = nextPitch
+        }
+        if (nextTimbre != null) {
+          plugin?.set("timbre", nextTimbre.toString())
+          currentTimbre = nextTimbre
+        }
+
+        if (nextPitch != null || nextTimbre != null) {
+          notifyEffectValuesChanged()
+        }
       } catch (exception: Throwable) {
         onPluginError(exception)
         return
@@ -70,6 +86,8 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
       plugin?.set("delay", preferences.delay.toString())
       plugin?.set("pitch", preferences.pitch.toString())
       plugin?.set("timbre", preferences.timbre.toString())
+      currentPitch = preferences.pitch
+      currentTimbre = preferences.timbre
     } catch (exception: Throwable) {
       Log.e(exception)
     }
@@ -223,6 +241,13 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
 
     plugin?.set("pitch", pitchBase.toString())
     plugin?.set("timbre", timbreBase.toString())
+    currentPitch = pitchBase
+    currentTimbre = timbreBase
+    notifyEffectValuesChanged()
+  }
+
+  private fun notifyEffectValuesChanged() {
+    effectValuesChanged?.invoke(currentPitch, currentTimbre)
   }
 
   private fun scheduleDynamicEffects() {
@@ -233,6 +258,11 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
 
   private fun stopDynamicEffects() {
     dynamicHandler.removeCallbacks(dynamicUpdate)
+  }
+
+  fun onEffectValuesChanged(callback: (pitch: Double, timbre: Double) -> Unit) {
+    effectValuesChanged = callback
+    callback(currentPitch, currentTimbre)
   }
 
   fun onServiceError(callback: (exception: Throwable) -> Unit) {
