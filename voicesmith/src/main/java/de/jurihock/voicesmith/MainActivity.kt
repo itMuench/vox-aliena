@@ -4,19 +4,26 @@ import android.content.ClipData
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.NameNotFoundException
+import android.media.MediaPlayer
 import android.os.Bundle
+import android.os.Environment
 import android.widget.Toast
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
@@ -31,10 +38,11 @@ import de.jurihock.voicesmith.io.selectChannels
 import de.jurihock.voicesmith.io.selectInputDevice
 import de.jurihock.voicesmith.io.selectOutputDevice
 import de.jurihock.voicesmith.service.AudioServiceActivity
-import de.jurihock.voicesmith.ui.IntParameterScreen
 import de.jurihock.voicesmith.ui.BigToggleButtonScreen
 import de.jurihock.voicesmith.ui.DeviceSelectorScreen
+import de.jurihock.voicesmith.ui.IntParameterScreen
 import de.jurihock.voicesmith.ui.MainTheme
+import de.jurihock.voicesmith.ui.RecordingItemScreen
 import de.jurihock.voicesmith.ui.UI
 import java.io.File
 
@@ -54,6 +62,10 @@ class MainActivity : AudioServiceActivity() {
   private val effectsExpanded = mutableStateOf(false)
   private val inputDevice = mutableStateOf("DEFAULT")
   private val outputDevice = mutableStateOf("DEFAULT")
+  private val recordings = mutableStateListOf<File>()
+  private val playingRecording = mutableStateOf<File?>(null)
+
+  private var mediaPlayer: MediaPlayer? = null
 
   private fun sync() {
     channels.intValue = preferences.channels
@@ -62,12 +74,34 @@ class MainActivity : AudioServiceActivity() {
     timbre.intValue = preferences.timbre
     inputDevice.value = selectedDeviceName(devices.inputs, preferences.input)
     outputDevice.value = selectedDeviceName(devices.outputs, preferences.output)
+    refreshRecordings()
   }
 
   private fun selectedDeviceName(devices: List<AudioDevice>, id: Int): String {
     return devices.firstOrNull { it.id == id }?.name
       ?: devices.firstOrNull { it.id == 0 }?.name
       ?: "DEFAULT"
+  }
+
+  private fun recordingDirectory(): File {
+    val external = getExternalFilesDir(Environment.DIRECTORY_MUSIC)
+    return if (external != null) {
+      File(external, "VoxAliena")
+    } else {
+      File(filesDir, "recordings")
+    }
+  }
+
+  private fun refreshRecordings() {
+    val files = recordingDirectory()
+      .listFiles { file ->
+        file.isFile && file.extension.equals("mp3", ignoreCase = true)
+      }
+      ?.sortedByDescending { it.lastModified() }
+      ?: emptyList()
+
+    recordings.clear()
+    recordings.addAll(files)
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -161,6 +195,28 @@ class MainActivity : AudioServiceActivity() {
                   })
               }
 
+              if (recordings.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(Dp(UI.PADDING)))
+                LazyColumn(
+                  modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = Dp(UI.PADDING * 16)),
+                  verticalArrangement = Arrangement.spacedBy(Dp(UI.PADDING))) {
+                  items(
+                    items = recordings,
+                    key = { it.absolutePath }) { file ->
+                    RecordingItemScreen(
+                      fileName = file.name,
+                      isPlaying = playingRecording.value == file,
+                      textShare = getString(R.string.recording_share),
+                      textDelete = getString(R.string.recording_delete),
+                      onPlayPause = { toggleRecordingPlayback(file) },
+                      onShare = { shareRecording(file) },
+                      onDelete = { deleteRecording(file) })
+                  }
+                }
+              }
+
               Spacer(modifier = Modifier.weight(1f))
             }
           }
@@ -184,6 +240,7 @@ class MainActivity : AudioServiceActivity() {
   }
 
   override fun onRecordingAudioServiceStarted() {
+    stopRecordingPlayback()
     recordingState.value = true
     game.on()
     vibrator.on()
@@ -193,7 +250,9 @@ class MainActivity : AudioServiceActivity() {
     recordingState.value = false
     game.off()
     vibrator.off()
-    shareRecording(file)
+
+    recordings.remove(file)
+    recordings.add(0, file)
   }
 
   override fun onAudioServiceFailed() {
@@ -201,6 +260,58 @@ class MainActivity : AudioServiceActivity() {
     recordingState.value = false
     game.off()
     vibrator.error()
+  }
+
+  private fun toggleRecordingPlayback(file: File) {
+    if (playingRecording.value == file) {
+      stopRecordingPlayback()
+      return
+    }
+
+    stopRecordingPlayback()
+
+    try {
+      mediaPlayer = MediaPlayer().apply {
+        setDataSource(file.absolutePath)
+        setOnCompletionListener {
+          stopRecordingPlayback()
+        }
+        setOnErrorListener { _, _, _ ->
+          stopRecordingPlayback()
+          Toast.makeText(
+            this@MainActivity,
+            getString(R.string.play_recording_failed),
+            Toast.LENGTH_LONG).show()
+          true
+        }
+        prepare()
+        start()
+      }
+      playingRecording.value = file
+    } catch (exception: Throwable) {
+      stopRecordingPlayback()
+      Log.e("Unable to play MP3 recording!", exception)
+      Toast.makeText(
+        this,
+        getString(R.string.play_recording_failed),
+        Toast.LENGTH_LONG).show()
+    }
+  }
+
+  private fun stopRecordingPlayback() {
+    val player = mediaPlayer
+    mediaPlayer = null
+    playingRecording.value = null
+
+    if (player != null) {
+      try {
+        player.stop()
+      } catch (exception: Throwable) {
+        Log.e(exception)
+      } finally {
+        player.release()
+      }
+    }
   }
 
   private fun shareRecording(file: File) {
@@ -229,6 +340,25 @@ class MainActivity : AudioServiceActivity() {
     }
   }
 
+  private fun deleteRecording(file: File) {
+    if (playingRecording.value == file) {
+      stopRecordingPlayback()
+    }
+
+    try {
+      if (file.exists() && !file.delete()) {
+        throw IllegalStateException("Unable to delete MP3 recording!")
+      }
+      recordings.remove(file)
+    } catch (exception: Throwable) {
+      Log.e("Unable to delete MP3 recording!", exception)
+      Toast.makeText(
+        this,
+        getString(R.string.delete_recording_failed),
+        Toast.LENGTH_LONG).show()
+    }
+  }
+
   private fun onSelectInputDevice() {
     devices.selectInputDevice(preferences.input) {
       preferences.input = it
@@ -248,6 +378,11 @@ class MainActivity : AudioServiceActivity() {
       channels.intValue = it
       preferences.channels = it
     }
+  }
+
+  override fun onDestroy() {
+    stopRecordingPlayback()
+    super.onDestroy()
   }
 
 }
