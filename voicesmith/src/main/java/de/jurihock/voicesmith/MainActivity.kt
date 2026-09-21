@@ -24,7 +24,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -133,8 +133,16 @@ class MainActivity : AudioServiceActivity() {
       ?.sortedByDescending { it.lastModified() }
       ?: emptyList()
 
+    val retainedFiles = files.take(MAX_RECORDINGS)
+
+    files.drop(MAX_RECORDINGS).forEach { obsoleteFile ->
+      if (obsoleteFile.exists() && !obsoleteFile.delete()) {
+        Log.w("Unable to delete obsolete MP3 recording ${obsoleteFile.absolutePath}")
+      }
+    }
+
     recordings.clear()
-    recordings.addAll(files)
+    recordings.addAll(retainedFiles)
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -227,10 +235,11 @@ class MainActivity : AudioServiceActivity() {
                         min = Dp(UI.PADDING * 5),
                         max = Dp(UI.PADDING * 16)),
                     verticalArrangement = Arrangement.spacedBy(Dp(UI.PADDING))) {
-                    items(
+                    itemsIndexed(
                       items = recordings,
-                      key = { it.absolutePath }) { file ->
+                      key = { _, file -> file.absolutePath }) { index, file ->
                       RecordingItemScreen(
+                        position = index + 1,
                         fileName = file.name,
                         isPlaying = playingRecording.value == file,
                         textShare = getString(R.string.recording_share),
@@ -694,6 +703,10 @@ class MainActivity : AudioServiceActivity() {
   override fun onDestroy() {
     stopRecordingPlayback()
     super.onDestroy()
+  }
+
+  private companion object {
+    const val MAX_RECORDINGS = 3
   }
 
 }
