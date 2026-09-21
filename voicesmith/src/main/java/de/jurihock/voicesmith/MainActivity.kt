@@ -1,6 +1,8 @@
 package de.jurihock.voicesmith
 
+import android.app.PendingIntent
 import android.content.ClipData
+import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.NameNotFoundException
@@ -69,6 +71,7 @@ class MainActivity : AudioServiceActivity() {
   private val outputDevice = mutableStateOf("DEFAULT")
   private val recordings = mutableStateListOf<File>()
   private val playingRecording = mutableStateOf<File?>(null)
+  private val quickShareTarget = mutableStateOf<String?>(null)
 
   private var mediaPlayer: MediaPlayer? = null
 
@@ -81,6 +84,7 @@ class MainActivity : AudioServiceActivity() {
     inputDevice.value = selectedDeviceName(devices.inputs, preferences.input)
     outputDevice.value = selectedDeviceName(devices.outputs, preferences.output)
     refreshRecordings()
+    refreshQuickShareTarget()
   }
 
   private fun selectedDeviceName(devices: List<AudioDevice>, id: Int): String {
@@ -161,8 +165,10 @@ class MainActivity : AudioServiceActivity() {
                         isPlaying = playingRecording.value == file,
                         textShare = getString(R.string.recording_share),
                         textDelete = getString(R.string.recording_delete),
+                        quickShareTarget = quickShareTarget.value,
                         onPlayPause = { toggleRecordingPlayback(file) },
                         onShare = { shareRecording(file) },
+                        onQuickShare = { quickShareRecording(file) },
                         onDelete = { deleteRecording(file) })
                     }
                   }
@@ -268,6 +274,11 @@ class MainActivity : AudioServiceActivity() {
     }
   }
 
+  override fun onResume() {
+    super.onResume()
+    refreshQuickShareTarget()
+  }
+
   override fun onLiveAudioServiceStarted() {
     liveState.value = true
     game.on()
@@ -357,23 +368,35 @@ class MainActivity : AudioServiceActivity() {
     }
   }
 
+  private fun createShareIntent(file: File, component: ComponentName? = null): Intent {
+    val uri = FileProvider.getUriForFile(
+      this,
+      "${packageName}.files",
+      file)
+
+    return Intent(Intent.ACTION_SEND).apply {
+      type = "audio/mpeg"
+      putExtra(Intent.EXTRA_STREAM, uri)
+      clipData = ClipData.newUri(contentResolver, file.name, uri)
+      addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+      if (component != null) {
+        setComponent(component)
+      }
+    }
+  }
+
   private fun shareRecording(file: File) {
     try {
-      val uri = FileProvider.getUriForFile(
+      val callback = PendingIntent.getBroadcast(
         this,
-        "${packageName}.files",
-        file)
-
-      val share = Intent(Intent.ACTION_SEND).apply {
-        type = "audio/mpeg"
-        putExtra(Intent.EXTRA_STREAM, uri)
-        clipData = ClipData.newUri(contentResolver, file.name, uri)
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-      }
+        0,
+        Intent(this, ShareTargetChosenReceiver::class.java),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE)
 
       startActivity(Intent.createChooser(
-        share,
-        getString(R.string.share_recording)))
+        createShareIntent(file),
+        getString(R.string.share_recording),
+        callback.intentSender))
     } catch (exception: Throwable) {
       Log.e("Unable to share MP3 recording!", exception)
       Toast.makeText(
@@ -381,6 +404,55 @@ class MainActivity : AudioServiceActivity() {
         getString(R.string.share_recording_failed),
         Toast.LENGTH_LONG).show()
     }
+  }
+
+  private fun quickShareRecording(file: File) {
+    val component = preferences.lastShareTarget
+      ?.let { ComponentName.unflattenFromString(it) }
+
+    if (component == null) {
+      clearQuickShareTarget()
+      shareRecording(file)
+      return
+    }
+
+    try {
+      startActivity(createShareIntent(file, component))
+    } catch (exception: Throwable) {
+      Log.e("Unable to quick-share MP3 recording!", exception)
+      clearQuickShareTarget()
+      shareRecording(file)
+    }
+  }
+
+  private fun refreshQuickShareTarget() {
+    val target = preferences.lastShareTarget
+    if (target == null) {
+      quickShareTarget.value = null
+      return
+    }
+
+    val component = ComponentName.unflattenFromString(target)
+    if (component == null) {
+      clearQuickShareTarget()
+      return
+    }
+
+    try {
+      val info = packageManager.getActivityInfo(
+        component,
+        PackageManager.ComponentInfoFlags.of(0))
+      val appLabel = info.applicationInfo.loadLabel(packageManager).toString().trim()
+      val activityLabel = info.loadLabel(packageManager).toString().trim()
+      quickShareTarget.value = appLabel.ifEmpty { activityLabel }
+    } catch (exception: NameNotFoundException) {
+      clearQuickShareTarget()
+    }
+  }
+
+  private fun clearQuickShareTarget() {
+    preferences.lastShareTarget = null
+    quickShareTarget.value = null
   }
 
   private fun deleteRecording(file: File) {

@@ -56,6 +56,18 @@ class Preferences(context: Context) {
     get() { return preferences.getBoolean(::manualEffects.name, false) }
     set(value) { preferences.edit().putBoolean(::manualEffects.name, value).commit() }
 
+  var lastShareTarget: String?
+    get() { return preferences.getString(::lastShareTarget.name, null) }
+    set(value) {
+      val editor = preferences.edit()
+      if (value == null) {
+        editor.remove(::lastShareTarget.name)
+      } else {
+        editor.putString(::lastShareTarget.name, value)
+      }
+      editor.commit()
+    }
+
   fun register(listener: OnSharedPreferenceChangeListener) {
     preferences.registerOnSharedPreferenceChangeListener(listener)
   }
