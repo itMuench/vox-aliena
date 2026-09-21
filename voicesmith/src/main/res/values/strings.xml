@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
   <string name="delay">Delay</string>
+  <string name="delete_recording_failed">Die MP3-Aufnahme konnte nicht gelöscht werden.</string>
   <string name="effects_hide">EFFEKTE AUSBLENDEN</string>
   <string name="effects_show">EFFEKTE ANZEIGEN</string>
   <string name="input">Input</string>
@@ -12,6 +13,9 @@
   <string name="permissions_rationale_text">Microphone permission must be granted in order to use Voicesmith!</string>
   <string name="permissions_rationale_title">Permissions missing</string>
   <string name="pitch">Pitch</string>
+  <string name="play_recording_failed">Die MP3-Aufnahme konnte nicht abgespielt werden.</string>
+  <string name="recording_delete">Löschen</string>
+  <string name="recording_share">Teilen mit …</string>
   <string name="select_channels">Select signal path</string>
   <string name="select_input_device">Select input device</string>
   <string name="select_output_device">Select output device</string>
