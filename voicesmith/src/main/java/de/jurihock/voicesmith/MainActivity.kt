@@ -40,11 +40,15 @@ import de.jurihock.voicesmith.io.selectOutputDevice
 import de.jurihock.voicesmith.service.AudioServiceActivity
 import de.jurihock.voicesmith.ui.BigToggleButtonScreen
 import de.jurihock.voicesmith.ui.DeviceSelectorScreen
+import de.jurihock.voicesmith.ui.EffectModeSwitchScreen
 import de.jurihock.voicesmith.ui.IntParameterScreen
 import de.jurihock.voicesmith.ui.MainTheme
+import de.jurihock.voicesmith.ui.ManualSemitoneScreen
 import de.jurihock.voicesmith.ui.RecordingItemScreen
+import de.jurihock.voicesmith.ui.SemitoneSliderScreen
 import de.jurihock.voicesmith.ui.UI
 import java.io.File
+import kotlin.math.roundToInt
 
 class MainActivity : AudioServiceActivity() {
 
@@ -55,8 +59,9 @@ class MainActivity : AudioServiceActivity() {
 
   private val channels = mutableIntStateOf(1)
   private val delay = mutableIntStateOf(0)
-  private val pitch = mutableIntStateOf(0)
-  private val timbre = mutableIntStateOf(0)
+  private val pitch = mutableStateOf(0.0)
+  private val timbre = mutableStateOf(0.0)
+  private val manualEffects = mutableStateOf(false)
   private val liveState = mutableStateOf(false)
   private val recordingState = mutableStateOf(false)
   private val effectsExpanded = mutableStateOf(false)
@@ -70,8 +75,9 @@ class MainActivity : AudioServiceActivity() {
   private fun sync() {
     channels.intValue = preferences.channels
     delay.intValue = preferences.delay
-    pitch.intValue = preferences.pitch
-    timbre.intValue = preferences.timbre
+    pitch.value = preferences.pitch
+    timbre.value = preferences.timbre
+    manualEffects.value = preferences.manualEffects
     inputDevice.value = selectedDeviceName(devices.inputs, preferences.input)
     outputDevice.value = selectedDeviceName(devices.outputs, preferences.output)
     refreshRecordings()
@@ -118,7 +124,7 @@ class MainActivity : AudioServiceActivity() {
       setContent {
         MainTheme {
           val audioActive = liveState.value || recordingState.value
-          val distortionConfigured = pitch.intValue != 0 || timbre.intValue != 0
+          val distortionConfigured = pitch.value != 0.0 || timbre.value != 0.0
 
           Scaffold(
             modifier = Modifier.fillMaxSize(),
@@ -192,6 +198,13 @@ class MainActivity : AudioServiceActivity() {
 
               if (effectsExpanded.value) {
                 Spacer(modifier = Modifier.height(Dp(UI.PADDING)))
+                EffectModeSwitchScreen(
+                  textSlider = getString(R.string.effects_mode_slider),
+                  textManual = getString(R.string.effects_mode_manual),
+                  manualMode = manualEffects,
+                  enabled = !recordingState.value,
+                  onChange = { onSelectEffectMode(it) })
+                Spacer(modifier = Modifier.height(Dp(UI.PADDING)))
                 IntParameterScreen(
                   name = getString(R.string.delay), unit = getString(R.string.milliseconds), value = delay,
                   min = 0, max = 1000, inc = 50,
@@ -200,23 +213,50 @@ class MainActivity : AudioServiceActivity() {
                     preferences.delay = it
                   })
                 Spacer(modifier = Modifier.height(Dp(UI.PADDING)))
-                IntParameterScreen(
-                  name = getString(R.string.pitch), unit = getString(R.string.semitones), value = pitch,
-                  min = -12, max = +12, inc = 1,
-                  enabled = !recordingState.value,
-                  onChange = {
-                    pitch.intValue = it
-                    preferences.pitch = it
-                  })
-                Spacer(modifier = Modifier.height(Dp(UI.PADDING)))
-                IntParameterScreen(
-                  name = getString(R.string.timbre), unit = getString(R.string.semitones), value = timbre,
-                  min = -12, max = +12, inc = 1,
-                  enabled = !recordingState.value,
-                  onChange = {
-                    timbre.intValue = it
-                    preferences.timbre = it
-                  })
+
+                if (manualEffects.value) {
+                  ManualSemitoneScreen(
+                    name = getString(R.string.pitch),
+                    unit = getString(R.string.semitones),
+                    value = pitch,
+                    rangeText = getString(R.string.effects_manual_range),
+                    enabled = !recordingState.value,
+                    onChange = {
+                      pitch.value = it
+                      preferences.pitch = it
+                    })
+                  Spacer(modifier = Modifier.height(Dp(UI.PADDING)))
+                  ManualSemitoneScreen(
+                    name = getString(R.string.timbre),
+                    unit = getString(R.string.semitones),
+                    value = timbre,
+                    rangeText = getString(R.string.effects_manual_range),
+                    enabled = !recordingState.value,
+                    onChange = {
+                      timbre.value = it
+                      preferences.timbre = it
+                    })
+                } else {
+                  SemitoneSliderScreen(
+                    name = getString(R.string.pitch),
+                    unit = getString(R.string.semitones),
+                    value = pitch,
+                    enabled = !recordingState.value,
+                    onChange = {
+                      pitch.value = it
+                      preferences.pitch = it
+                    })
+                  Spacer(modifier = Modifier.height(Dp(UI.PADDING)))
+                  SemitoneSliderScreen(
+                    name = getString(R.string.timbre),
+                    unit = getString(R.string.semitones),
+                    value = timbre,
+                    enabled = !recordingState.value,
+                    onChange = {
+                      timbre.value = it
+                      preferences.timbre = it
+                    })
+                }
               }
 
               Spacer(modifier = Modifier.weight(1f))
@@ -361,6 +401,21 @@ class MainActivity : AudioServiceActivity() {
         getString(R.string.delete_recording_failed),
         Toast.LENGTH_LONG).show()
     }
+  }
+
+  private fun onSelectEffectMode(manual: Boolean) {
+    if (!manual) {
+      val sliderPitch = pitch.value.roundToInt().coerceIn(-12, 12).toDouble()
+      val sliderTimbre = timbre.value.roundToInt().coerceIn(-12, 12).toDouble()
+
+      pitch.value = sliderPitch
+      timbre.value = sliderTimbre
+      preferences.pitch = sliderPitch
+      preferences.timbre = sliderTimbre
+    }
+
+    manualEffects.value = manual
+    preferences.manualEffects = manual
   }
 
   private fun onSelectInputDevice() {
