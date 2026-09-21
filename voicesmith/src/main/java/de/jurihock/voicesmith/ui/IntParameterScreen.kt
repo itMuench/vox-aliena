@@ -14,6 +14,7 @@ import kotlin.math.roundToInt
 fun IntParameterScreen(modifier: Modifier = Modifier,
                        name: String, unit: String, value: State<Int>,
                        min: Int, max: Int, inc: Int,
+                       enabled: Boolean = true,
                        onChange: (value: Int) -> Unit) {
 
   fun get() : String {
@@ -37,6 +38,7 @@ fun IntParameterScreen(modifier: Modifier = Modifier,
       value = value.value.toFloat(),
       valueRange = min.toFloat()..max.toFloat(),
       steps = (max - min - 1) / inc,
+      enabled = enabled,
       onValueChange = { set(it.roundToInt()) })
   }
 
