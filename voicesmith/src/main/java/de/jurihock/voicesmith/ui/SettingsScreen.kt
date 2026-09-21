@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
+import kotlin.math.abs
 
 @Composable
 fun SettingsScreen(modifier: Modifier = Modifier,
@@ -22,21 +23,38 @@ fun SettingsScreen(modifier: Modifier = Modifier,
                    saveText: String,
                    textSlider: String,
                    textManual: String,
+                   textStatic: String,
+                   textDynamic: String,
+                   dynamicRangePrefix: String,
+                   dynamicRangeUnavailable: String,
                    delayName: String,
                    milliseconds: String,
                    pitchName: String,
+                   pitchRangeName: String,
                    timbreName: String,
+                   timbreRangeName: String,
                    semitones: String,
                    manualRangeText: String,
                    delay: State<Int>,
                    pitch: State<Double>,
+                   pitchDynamic: State<Boolean>,
+                   pitchRange: State<Double>,
                    timbre: State<Double>,
+                   timbreDynamic: State<Boolean>,
+                   timbreRange: State<Double>,
                    manualMode: State<Boolean>,
                    onDelayChange: (value: Int) -> Unit,
                    onPitchChange: (value: Double) -> Unit,
+                   onPitchDynamicChange: (dynamic: Boolean) -> Unit,
+                   onPitchRangeChange: (value: Double) -> Unit,
                    onTimbreChange: (value: Double) -> Unit,
+                   onTimbreDynamicChange: (dynamic: Boolean) -> Unit,
+                   onTimbreRangeChange: (value: Double) -> Unit,
                    onModeChange: (manual: Boolean) -> Unit,
                    onSave: () -> Unit) {
+
+  val pitchMaxRange = (12.0 - abs(pitch.value)).coerceAtLeast(0.0)
+  val timbreMaxRange = (12.0 - abs(timbre.value)).coerceAtLeast(0.0)
 
   Column(
     modifier = modifier
@@ -76,9 +94,32 @@ fun SettingsScreen(modifier: Modifier = Modifier,
         value = pitch,
         rangeText = manualRangeText,
         onChange = onPitchChange)
+    } else {
+      SemitoneSliderScreen(
+        name = pitchName,
+        unit = semitones,
+        value = pitch,
+        onChange = onPitchChange)
+    }
 
-      Spacer(modifier = Modifier.height(Dp(UI.PADDING)))
+    Spacer(modifier = Modifier.height(Dp(UI.PADDING)))
 
+    DynamicRangeScreen(
+      name = pitchRangeName,
+      unit = semitones,
+      textStatic = textStatic,
+      textDynamic = textDynamic,
+      allowedRangePrefix = dynamicRangePrefix,
+      unavailableText = dynamicRangeUnavailable,
+      dynamic = pitchDynamic,
+      value = pitchRange,
+      maxRange = pitchMaxRange,
+      onDynamicChange = onPitchDynamicChange,
+      onRangeChange = onPitchRangeChange)
+
+    Spacer(modifier = Modifier.height(Dp(UI.PADDING * 2)))
+
+    if (manualMode.value) {
       ManualSemitoneScreen(
         name = timbreName,
         unit = semitones,
@@ -87,19 +128,26 @@ fun SettingsScreen(modifier: Modifier = Modifier,
         onChange = onTimbreChange)
     } else {
       SemitoneSliderScreen(
-        name = pitchName,
-        unit = semitones,
-        value = pitch,
-        onChange = onPitchChange)
-
-      Spacer(modifier = Modifier.height(Dp(UI.PADDING)))
-
-      SemitoneSliderScreen(
         name = timbreName,
         unit = semitones,
         value = timbre,
         onChange = onTimbreChange)
     }
+
+    Spacer(modifier = Modifier.height(Dp(UI.PADDING)))
+
+    DynamicRangeScreen(
+      name = timbreRangeName,
+      unit = semitones,
+      textStatic = textStatic,
+      textDynamic = textDynamic,
+      allowedRangePrefix = dynamicRangePrefix,
+      unavailableText = dynamicRangeUnavailable,
+      dynamic = timbreDynamic,
+      value = timbreRange,
+      maxRange = timbreMaxRange,
+      onDynamicChange = onTimbreDynamicChange,
+      onRangeChange = onTimbreRangeChange)
 
     Spacer(modifier = Modifier.height(Dp(UI.PADDING * 2)))
 
