@@ -87,6 +87,7 @@ abstract class AudioServiceActivity : ComponentActivity(), ServiceConnection {
   protected abstract fun onLiveAudioServiceStopped()
   protected abstract fun onRecordingAudioServiceStarted()
   protected abstract fun onRecordingAudioServiceStopped(file: File)
+  protected abstract fun onAudioEffectValuesChanged(pitch: Double, timbre: Double)
   protected abstract fun onAudioServiceFailed()
 
   fun onStartStopLiveAudioService() {
@@ -200,6 +201,9 @@ abstract class AudioServiceActivity : ComponentActivity(), ServiceConnection {
 
     service?.onServiceError { exception ->
       handleAudioServiceFailure(exception)
+    }
+    service?.onEffectValuesChanged { pitch, timbre ->
+      onAudioEffectValuesChanged(pitch, timbre)
     }
 
     if (requestedMode != AudioServiceMode.STOPPED) {
