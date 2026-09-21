@@ -147,6 +147,10 @@ abstract class AudioServiceActivity : ComponentActivity(), ServiceConnection {
         if (file != null) {
           onRecordingAudioServiceStopped(file)
         } else {
+          Toast.makeText(
+            this,
+            getString(R.string.recording_finalize_failed),
+            Toast.LENGTH_LONG).show()
           onAudioServiceFailed()
         }
       }
