@@ -18,10 +18,6 @@ enum class AudioServiceMode {
   STOPPED,
   LIVE,
   RECORDING
-  private companion object {
-    const val RECORDING_LEVEL_INTERVAL_MS = 50L
-  }
-
 }
 
 class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListener {
@@ -385,6 +381,11 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
       recordingFile = null
       error?.invoke(exception)
     }
+  }
+
+
+  private companion object {
+    const val RECORDING_LEVEL_INTERVAL_MS = 50L
   }
 
 }
