@@ -9,6 +9,18 @@ import org.junit.Test
 class DynamicEffectRandomWalkTest {
 
   @Test
+  fun convertsDecimalDynamicIntervalsToMilliseconds() {
+    assertEquals(1200L, dynamicIntervalMillis(1.2))
+    assertEquals(3456L, dynamicIntervalMillis(3.456))
+  }
+
+  @Test
+  fun clampsDynamicIntervalsToOneThroughFiveSeconds() {
+    assertEquals(1000L, dynamicIntervalMillis(0.2))
+    assertEquals(5000L, dynamicIntervalMillis(7.0))
+  }
+
+  @Test
   fun walksUpToPositiveBoundaryAndThenBackInward() {
     val walk = DynamicEffectRandomWalk { true }
     walk.configure(baseValue = 6.0, configuredRange = 2.0, dynamic = true)
