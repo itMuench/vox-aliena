@@ -10,6 +10,18 @@ class Preferences(context: Context) {
   private val preferences = PreferenceManager.getDefaultSharedPreferences(context)
   private val features by lazy { AudioFeatures(context) }
 
+  private fun getDouble(name: String): Double {
+    return when (val value = preferences.all[name]) {
+      is Number -> value.toDouble()
+      is String -> value.toDoubleOrNull() ?: 0.0
+      else -> 0.0
+    }
+  }
+
+  private fun putDouble(name: String, value: Double) {
+    preferences.edit().putString(name, value.toString()).commit()
+  }
+
   var input: Int
     get() { return preferences.getInt(::input.name, 0) }
     set(value) { preferences.edit().putInt(::input.name, value).commit() }
@@ -32,13 +44,17 @@ class Preferences(context: Context) {
     get() { return preferences.getInt(::delay.name, 0) }
     set(value) { preferences.edit().putInt(::delay.name, value).commit() }
 
-  var pitch: Int
-    get() { return preferences.getInt(::pitch.name, 0) }
-    set(value) { preferences.edit().putInt(::pitch.name, value).commit() }
+  var pitch: Double
+    get() { return getDouble(::pitch.name) }
+    set(value) { putDouble(::pitch.name, value) }
 
-  var timbre: Int
-    get() { return preferences.getInt(::timbre.name, 0) }
-    set(value) { preferences.edit().putInt(::timbre.name, value).commit() }
+  var timbre: Double
+    get() { return getDouble(::timbre.name) }
+    set(value) { putDouble(::timbre.name, value) }
+
+  var manualEffects: Boolean
+    get() { return preferences.getBoolean(::manualEffects.name, false) }
+    set(value) { preferences.edit().putBoolean(::manualEffects.name, value).commit() }
 
   fun register(listener: OnSharedPreferenceChangeListener) {
     preferences.registerOnSharedPreferenceChangeListener(listener)
