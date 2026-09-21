@@ -2,6 +2,7 @@ package de.jurihock.voicesmith.service
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -56,7 +57,7 @@ class DynamicEffectRandomWalkTest {
 
     assertFalse(walk.isEnabled)
     assertEquals(11.95, walk.current(), 1e-9)
-    assertEquals(null, walk.next())
+    assertNull(walk.next())
   }
 
   @Test
