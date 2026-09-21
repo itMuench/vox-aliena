@@ -5,6 +5,12 @@ import android.content.SharedPreferences.OnSharedPreferenceChangeListener
 import androidx.preference.PreferenceManager
 import de.jurihock.voicesmith.io.AudioFeatures
 
+enum class RecordingFilenameCharacters {
+  NUMBERS,
+  LETTERS,
+  ALPHANUMERIC
+}
+
 class Preferences(context: Context) {
 
   private val preferences = PreferenceManager.getDefaultSharedPreferences(context)
@@ -79,6 +85,37 @@ class Preferences(context: Context) {
   var timbreInterval: Double
     get() { return getDouble(::timbreInterval.name).takeIf { it in 0.5..5.0 } ?: 1.0 }
     set(value) { putDouble(::timbreInterval.name, value.coerceIn(0.5, 5.0)) }
+
+  var recordingFilenameLength: Int
+    get() { return preferences.getInt(::recordingFilenameLength.name, 12).coerceIn(10, 30) }
+    set(value) { preferences.edit().putInt(::recordingFilenameLength.name, value.coerceIn(10, 30)).commit() }
+
+  var recordingFilenameDynamicLength: Boolean
+    get() { return preferences.getBoolean(::recordingFilenameDynamicLength.name, false) }
+    set(value) { preferences.edit().putBoolean(::recordingFilenameDynamicLength.name, value).commit() }
+
+  var recordingFilenameMinLength: Int
+    get() { return preferences.getInt(::recordingFilenameMinLength.name, 10).coerceIn(10, 30) }
+    set(value) { preferences.edit().putInt(::recordingFilenameMinLength.name, value.coerceIn(10, 30)).commit() }
+
+  var recordingFilenameMaxLength: Int
+    get() { return preferences.getInt(::recordingFilenameMaxLength.name, 30).coerceIn(10, 30) }
+    set(value) { preferences.edit().putInt(::recordingFilenameMaxLength.name, value.coerceIn(10, 30)).commit() }
+
+  var recordingFilenameCharacters: RecordingFilenameCharacters
+    get() {
+      val stored = preferences.getString(
+        ::recordingFilenameCharacters.name,
+        RecordingFilenameCharacters.ALPHANUMERIC.name)
+      return runCatching {
+        RecordingFilenameCharacters.valueOf(stored ?: RecordingFilenameCharacters.ALPHANUMERIC.name)
+      }.getOrDefault(RecordingFilenameCharacters.ALPHANUMERIC)
+    }
+    set(value) {
+      preferences.edit()
+        .putString(::recordingFilenameCharacters.name, value.name)
+        .commit()
+    }
 
   var lastShareTarget: String?
     get() { return preferences.getString(::lastShareTarget.name, null) }

@@ -38,6 +38,7 @@ import androidx.core.content.FileProvider
 import de.jurihock.voicesmith.etc.Game
 import de.jurihock.voicesmith.etc.Log
 import de.jurihock.voicesmith.etc.Preferences
+import de.jurihock.voicesmith.etc.RecordingFilenameCharacters
 import de.jurihock.voicesmith.etc.Vibrator
 import de.jurihock.voicesmith.io.AudioDevice
 import de.jurihock.voicesmith.io.AudioDevices
@@ -83,6 +84,12 @@ class MainActivity : AudioServiceActivity() {
   private val draftTimbreDynamic = mutableStateOf(false)
   private val draftTimbreRange = mutableStateOf(0.1)
   private val draftTimbreInterval = mutableStateOf(1.0)
+  private val draftFilenameLength = mutableIntStateOf(12)
+  private val draftFilenameDynamicLength = mutableStateOf(false)
+  private val draftFilenameMinLength = mutableIntStateOf(10)
+  private val draftFilenameMaxLength = mutableIntStateOf(30)
+  private val draftFilenameCharacters =
+    mutableStateOf(RecordingFilenameCharacters.ALPHANUMERIC)
   private val liveState = mutableStateOf(false)
   private val recordingState = mutableStateOf(false)
   private val inputDevice = mutableStateOf("DEFAULT")
@@ -186,6 +193,16 @@ class MainActivity : AudioServiceActivity() {
               seconds = getString(R.string.seconds),
               intervalRangeText = getString(R.string.dynamic_interval_range),
               manualRangeText = getString(R.string.effects_manual_range),
+              filenameTitle = getString(R.string.filename_settings_title),
+              filenameLengthLabel = getString(R.string.filename_length),
+              filenameDynamicLengthLabel = getString(R.string.filename_dynamic_length),
+              filenameMinLengthLabel = getString(R.string.filename_min_length),
+              filenameMaxLengthLabel = getString(R.string.filename_max_length),
+              filenameLengthRangeText = getString(R.string.filename_length_range),
+              filenameCharactersTitle = getString(R.string.filename_characters),
+              filenameNumbersOnlyLabel = getString(R.string.filename_numbers_only),
+              filenameLettersOnlyLabel = getString(R.string.filename_letters_only),
+              filenameAlphanumericLabel = getString(R.string.filename_alphanumeric),
               delay = draftDelay,
               pitch = draftPitch,
               pitchDynamic = draftPitchDynamic,
@@ -196,6 +213,11 @@ class MainActivity : AudioServiceActivity() {
               timbreRange = draftTimbreRange,
               timbreInterval = draftTimbreInterval,
               manualMode = draftManualEffects,
+              filenameLength = draftFilenameLength,
+              filenameDynamicLength = draftFilenameDynamicLength,
+              filenameMinLength = draftFilenameMinLength,
+              filenameMaxLength = draftFilenameMaxLength,
+              filenameCharacters = draftFilenameCharacters,
               onDelayChange = { draftDelay.intValue = it },
               onPitchChange = { setDraftPitch(it) },
               onPitchDynamicChange = { setDraftPitchDynamic(it) },
@@ -206,6 +228,11 @@ class MainActivity : AudioServiceActivity() {
               onTimbreRangeChange = { setDraftTimbreRange(it) },
               onTimbreIntervalChange = { setDraftTimbreInterval(it) },
               onModeChange = { onSelectDraftEffectMode(it) },
+              onFilenameLengthChange = { setDraftFilenameLength(it) },
+              onFilenameDynamicLengthChange = { draftFilenameDynamicLength.value = it },
+              onFilenameMinLengthChange = { setDraftFilenameMinLength(it) },
+              onFilenameMaxLengthChange = { setDraftFilenameMaxLength(it) },
+              onFilenameCharactersChange = { draftFilenameCharacters.value = it },
               onSave = { saveSettings() })
           } else {
           Scaffold(
@@ -550,6 +577,12 @@ class MainActivity : AudioServiceActivity() {
     draftTimbreDynamic.value = preferences.timbreDynamic
     draftTimbreRange.value = preferences.timbreRange
     draftTimbreInterval.value = preferences.timbreInterval
+    draftFilenameLength.intValue = preferences.recordingFilenameLength
+    draftFilenameDynamicLength.value = preferences.recordingFilenameDynamicLength
+    draftFilenameMinLength.intValue = preferences.recordingFilenameMinLength
+    draftFilenameMaxLength.intValue = preferences.recordingFilenameMaxLength
+    draftFilenameCharacters.value = preferences.recordingFilenameCharacters
+    normalizeFilenameLengthRange()
     normalizePitchRange()
     normalizeTimbreRange()
     settingsOpen.value = true
@@ -633,6 +666,40 @@ class MainActivity : AudioServiceActivity() {
     }
   }
 
+  private fun normalizeFilenameLengthRange() {
+    draftFilenameLength.intValue = draftFilenameLength.intValue.coerceIn(10, 30)
+    draftFilenameMinLength.intValue = draftFilenameMinLength.intValue.coerceIn(10, 30)
+    draftFilenameMaxLength.intValue = draftFilenameMaxLength.intValue.coerceIn(10, 30)
+
+    if (draftFilenameMinLength.intValue > draftFilenameMaxLength.intValue) {
+      draftFilenameMaxLength.intValue = draftFilenameMinLength.intValue
+    }
+  }
+
+  private fun setDraftFilenameLength(value: Int) {
+    if (value in 10..30) {
+      draftFilenameLength.intValue = value
+    }
+  }
+
+  private fun setDraftFilenameMinLength(value: Int) {
+    if (value in 10..30) {
+      draftFilenameMinLength.intValue = value
+      if (draftFilenameMaxLength.intValue < value) {
+        draftFilenameMaxLength.intValue = value
+      }
+    }
+  }
+
+  private fun setDraftFilenameMaxLength(value: Int) {
+    if (value in 10..30) {
+      draftFilenameMaxLength.intValue = value
+      if (draftFilenameMinLength.intValue > value) {
+        draftFilenameMinLength.intValue = value
+      }
+    }
+  }
+
   private fun onSelectDraftEffectMode(manual: Boolean) {
     if (!manual) {
       setDraftPitch(draftPitch.value.roundToInt().coerceIn(-12, 12).toDouble())
@@ -645,6 +712,7 @@ class MainActivity : AudioServiceActivity() {
   private fun saveSettings() {
     normalizePitchRange()
     normalizeTimbreRange()
+    normalizeFilenameLengthRange()
 
     delay.intValue = draftDelay.intValue
     pitch.value = draftPitch.value
@@ -663,6 +731,11 @@ class MainActivity : AudioServiceActivity() {
     preferences.timbreDynamic = draftTimbreDynamic.value
     preferences.timbreRange = draftTimbreRange.value
     preferences.timbreInterval = draftTimbreInterval.value.coerceIn(0.5, 5.0)
+    preferences.recordingFilenameLength = draftFilenameLength.intValue
+    preferences.recordingFilenameDynamicLength = draftFilenameDynamicLength.value
+    preferences.recordingFilenameMinLength = draftFilenameMinLength.intValue
+    preferences.recordingFilenameMaxLength = draftFilenameMaxLength.intValue
+    preferences.recordingFilenameCharacters = draftFilenameCharacters.value
 
     settingsOpen.value = false
   }

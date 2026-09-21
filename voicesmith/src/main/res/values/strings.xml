@@ -15,6 +15,16 @@
   <string name="dynamic_range_unavailable">Keine dynamische Range möglich. Der Basiswert liegt zu nah an ±12.</string>
   <string name="dynamic_interval_range">Wert von 0,5 bis 5,0 Sekunden möglich</string>
   <string name="effects_show">EFFEKTE ANZEIGEN</string>
+  <string name="filename_settings_title">Dateinamen</string>
+  <string name="filename_length">Dateinamenlänge</string>
+  <string name="filename_dynamic_length">Dynamische Länge</string>
+  <string name="filename_min_length">Minimale Länge</string>
+  <string name="filename_max_length">Maximale Länge</string>
+  <string name="filename_length_range">Wert von 10 bis 30 Zeichen möglich</string>
+  <string name="filename_characters">Verwendete Zeichen</string>
+  <string name="filename_numbers_only">Nur Zahlen</string>
+  <string name="filename_letters_only">Nur Buchstaben</string>
+  <string name="filename_alphanumeric">Buchstaben + Zahlen</string>
   <string name="input">Input</string>
   <string name="milliseconds">ms</string>
   <string name="mono">M</string>
