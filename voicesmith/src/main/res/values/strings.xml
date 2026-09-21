@@ -3,6 +3,9 @@
   <string name="delay">Delay</string>
   <string name="delete_recording_failed">Die MP3-Aufnahme konnte nicht gelöscht werden.</string>
   <string name="effects_hide">EFFEKTE AUSBLENDEN</string>
+  <string name="effects_manual_range">Wert von -12,0 bis +12,0 möglich</string>
+  <string name="effects_mode_manual">MANUELL</string>
+  <string name="effects_mode_slider">SLIDER</string>
   <string name="effects_show">EFFEKTE ANZEIGEN</string>
   <string name="input">Input</string>
   <string name="milliseconds">ms</string>

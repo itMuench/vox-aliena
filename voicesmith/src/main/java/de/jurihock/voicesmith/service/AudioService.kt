@@ -83,7 +83,7 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
       throw IllegalStateException("Audio service is already active!")
     }
 
-    if (preferences.pitch == 0 && preferences.timbre == 0) {
+    if (preferences.pitch == 0.0 && preferences.timbre == 0.0) {
       throw IllegalStateException(
         "Pitch or Timbre must be non-zero before starting an MP3 recording!")
     }
