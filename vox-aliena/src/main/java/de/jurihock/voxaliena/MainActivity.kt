@@ -577,6 +577,12 @@ class MainActivity : AudioServiceActivity() {
     draftTimbreDynamic.value = preferences.timbreDynamic
     draftTimbreRange.value = preferences.timbreRange
     draftTimbreInterval.value = preferences.timbreInterval
+    if (draftPitchDynamic.value) {
+      draftPitch.value = normalizeDynamicBase(draftPitch.value)
+    }
+    if (draftTimbreDynamic.value) {
+      draftTimbre.value = normalizeDynamicBase(draftTimbre.value)
+    }
     draftFilenameLength.intValue = preferences.recordingFilenameLength
     draftFilenameDynamicLength.value = preferences.recordingFilenameDynamicLength
     draftFilenameMinLength.intValue = preferences.recordingFilenameMinLength
@@ -618,23 +624,39 @@ class MainActivity : AudioServiceActivity() {
     draftTimbreRange.value = draftTimbreRange.value.coerceIn(0.1, maxRange)
   }
 
+  private fun normalizeDynamicBase(value: Double): Double {
+    if (abs(value) >= 1.0) {
+      return value
+    }
+
+    return if (value < 0.0) -1.0 else 1.0
+  }
+
   private fun setDraftPitch(value: Double) {
-    draftPitch.value = value
+    draftPitch.value =
+      if (draftPitchDynamic.value) normalizeDynamicBase(value) else value
     normalizePitchRange()
   }
 
   private fun setDraftTimbre(value: Double) {
-    draftTimbre.value = value
+    draftTimbre.value =
+      if (draftTimbreDynamic.value) normalizeDynamicBase(value) else value
     normalizeTimbreRange()
   }
 
   private fun setDraftPitchDynamic(dynamic: Boolean) {
+    if (dynamic) {
+      draftPitch.value = normalizeDynamicBase(draftPitch.value)
+    }
     val maxRange = maxDynamicRange(draftPitch.value)
     draftPitchDynamic.value = dynamic && maxRange >= 0.1
     normalizePitchRange()
   }
 
   private fun setDraftTimbreDynamic(dynamic: Boolean) {
+    if (dynamic) {
+      draftTimbre.value = normalizeDynamicBase(draftTimbre.value)
+    }
     val maxRange = maxDynamicRange(draftTimbre.value)
     draftTimbreDynamic.value = dynamic && maxRange >= 0.1
     normalizeTimbreRange()
