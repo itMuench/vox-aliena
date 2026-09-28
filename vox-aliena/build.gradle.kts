@@ -22,7 +22,7 @@ val sdk by extra(intArrayOf(33, 34, 36)) // minSdk <= targetSdk <= compileSdk
 val jvm by extra(1.8) // sourceCompatibility == targetCompatibility == jvmTarget
 
 // release version information
-val releaseVersionName by extra("1.3")
+val releaseVersionName by extra("1.4")
 val releaseVersionCode by extra(17)
 
 plugins {
