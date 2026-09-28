@@ -11,11 +11,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.State
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import de.jurihock.voxaliena.etc.RecordingFilenameCharacters
 import kotlin.math.abs
@@ -87,13 +90,26 @@ fun SettingsScreen(modifier: Modifier = Modifier,
   val pitchMaxRange = (12.0 - abs(pitch.value)).coerceAtLeast(0.0)
   val timbreMaxRange = (12.0 - abs(timbre.value)).coerceAtLeast(0.0)
 
-  Column(
-    modifier = modifier
-      .fillMaxSize()
-      .background(MaterialTheme.colorScheme.background)
-      .verticalScroll(rememberScrollState())
-      .padding(Dp(UI.PADDING))
-  ) {
+  val settingsColorScheme = MaterialTheme.colorScheme.copy(
+    onBackground = Color.White,
+    onSurface = Color.White,
+    onSurfaceVariant = Color.White,
+    onPrimary = Color.White,
+    onSecondary = Color.White,
+    onTertiary = Color.White,
+    onPrimaryContainer = Color.White,
+    onSecondaryContainer = Color.White,
+    onTertiaryContainer = Color.White)
+
+  MaterialTheme(colorScheme = settingsColorScheme) {
+    CompositionLocalProvider(LocalContentColor provides Color.White) {
+      Column(
+        modifier = modifier
+          .fillMaxSize()
+          .background(MaterialTheme.colorScheme.background)
+          .verticalScroll(rememberScrollState())
+          .padding(Dp(UI.PADDING))
+      ) {
     Text(
       text = title,
       style = MaterialTheme.typography.headlineMedium)
@@ -221,11 +237,13 @@ fun SettingsScreen(modifier: Modifier = Modifier,
 
     Spacer(modifier = Modifier.height(Dp(UI.PADDING * 2)))
 
-    Button(
-      modifier = Modifier.fillMaxWidth(),
-      onClick = onSave
-    ) {
-      Text(text = saveText)
+        Button(
+          modifier = Modifier.fillMaxWidth(),
+          onClick = onSave
+        ) {
+          Text(text = saveText)
+        }
+      }
     }
   }
 }
