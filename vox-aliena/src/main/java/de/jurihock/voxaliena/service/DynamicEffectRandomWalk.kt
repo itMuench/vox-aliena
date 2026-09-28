@@ -39,18 +39,34 @@ internal class DynamicEffectRandomWalk(
       return null
     }
 
-    offsetSteps = when {
+    val proposedOffset = when {
       offsetSteps <= -limitSteps -> offsetSteps + 1
       offsetSteps >= limitSteps -> offsetSteps - 1
       randomUp() -> offsetSteps + 1
       else -> offsetSteps - 1
     }
 
+    if (wouldBeZero(proposedOffset)) {
+      val direction = proposedOffset - offsetSteps
+      val alternateOffset = offsetSteps - direction
+      if (alternateOffset in -limitSteps..limitSteps &&
+          !wouldBeZero(alternateOffset)) {
+        offsetSteps = alternateOffset
+      }
+    } else {
+      offsetSteps = proposedOffset
+    }
+
     return current()
+  }
+
+  private fun wouldBeZero(offset: Int): Boolean {
+    return abs(base + offset * STEP) < ZERO_EPSILON
   }
 
   private companion object {
     const val STEP = 0.1
+    const val ZERO_EPSILON = 1e-9
   }
 
 }
