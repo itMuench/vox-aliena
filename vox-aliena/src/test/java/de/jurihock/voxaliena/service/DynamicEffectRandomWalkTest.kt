@@ -5,6 +5,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlin.math.abs
 
 class DynamicEffectRandomWalkTest {
 
@@ -72,6 +73,54 @@ class DynamicEffectRandomWalkTest {
     assertFalse(walk.isEnabled)
     assertEquals(11.95, walk.current(), 1e-9)
     assertNull(walk.next())
+  }
+
+  @Test
+  fun positiveDynamicWalkKeepsOneSemitoneBufferFromZero() {
+    val walk = DynamicEffectRandomWalk { false }
+    walk.configure(baseValue = 1.0, configuredRange = 2.0, dynamic = true)
+
+    repeat(80) {
+      assertTrue(abs(walk.next()!!) >= 1.0 - 1e-9)
+    }
+  }
+
+  @Test
+  fun negativeDynamicWalkKeepsOneSemitoneBufferFromZero() {
+    val walk = DynamicEffectRandomWalk { true }
+    walk.configure(baseValue = -1.0, configuredRange = 2.0, dynamic = true)
+
+    repeat(80) {
+      assertTrue(abs(walk.next()!!) >= 1.0 - 1e-9)
+    }
+  }
+
+  @Test
+  fun dynamicBaseInsideBufferIsNormalizedToPositiveOne() {
+    val walk = DynamicEffectRandomWalk { false }
+    walk.configure(baseValue = 0.4, configuredRange = 0.3, dynamic = true)
+
+    assertEquals(1.0, walk.current(), 1e-9)
+    assertEquals(1.1, walk.next()!!, 1e-9)
+  }
+
+  @Test
+  fun negativeDynamicBaseInsideBufferIsNormalizedToNegativeOne() {
+    val walk = DynamicEffectRandomWalk { true }
+    walk.configure(baseValue = -0.4, configuredRange = 0.3, dynamic = true)
+
+    assertEquals(-1.0, walk.current(), 1e-9)
+    assertEquals(-1.1, walk.next()!!, 1e-9)
+  }
+
+  @Test
+  fun zeroDynamicBaseIsNormalizedToPositiveOne() {
+    val walk = DynamicEffectRandomWalk { false }
+    walk.configure(baseValue = 0.0, configuredRange = 0.1, dynamic = true)
+
+    assertEquals(1.0, walk.current(), 1e-9)
+    assertEquals(1.1, walk.next()!!, 1e-9)
+    assertEquals(1.0, walk.next()!!, 1e-9)
   }
 
   @Test

@@ -269,20 +269,24 @@ class AudioService : Service(), SharedPreferences.OnSharedPreferenceChangeListen
 
     val pitchBase = preferences.pitch
     val timbreBase = preferences.timbre
+    val pitchStart =
+      if (preferences.pitchDynamic) normalizeDynamicEffectBase(pitchBase) else pitchBase
+    val timbreStart =
+      if (preferences.timbreDynamic) normalizeDynamicEffectBase(timbreBase) else timbreBase
 
     pitchWalk.configure(
-      baseValue = pitchBase,
+      baseValue = pitchStart,
       configuredRange = preferences.pitchRange,
       dynamic = preferences.pitchDynamic)
     timbreWalk.configure(
-      baseValue = timbreBase,
+      baseValue = timbreStart,
       configuredRange = preferences.timbreRange,
       dynamic = preferences.timbreDynamic)
 
-    plugin?.set("pitch", pitchBase.toString())
-    plugin?.set("timbre", timbreBase.toString())
-    currentPitch = pitchBase
-    currentTimbre = timbreBase
+    plugin?.set("pitch", pitchStart.toString())
+    plugin?.set("timbre", timbreStart.toString())
+    currentPitch = pitchStart
+    currentTimbre = timbreStart
     notifyEffectValuesChanged()
   }
 
