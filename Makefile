@@ -33,7 +33,7 @@ pair:
 
 log:
 	@$(ADB) logcat -c
-	@$(ADB) logcat -v color vox-aliena.java:D vox-aliena.cpp:D *:S
+	@$(ADB) logcat -v color voxaliena.java:D voxaliena.cpp:D *:S
 
 key:
 	@keytool -genkeypair -keystore secret.keystore -alias github-jurihock-vox-aliena -dname '$(KEYDNA)' $(KEYARG)
