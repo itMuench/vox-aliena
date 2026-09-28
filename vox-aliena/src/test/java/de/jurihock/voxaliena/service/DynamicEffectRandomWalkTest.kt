@@ -76,47 +76,51 @@ class DynamicEffectRandomWalkTest {
   }
 
   @Test
-  fun positiveDynamicWalkNeverStepsToZero() {
+  fun positiveDynamicWalkKeepsOneSemitoneBufferFromZero() {
     val walk = DynamicEffectRandomWalk { false }
-    walk.configure(baseValue = 0.1, configuredRange = 0.3, dynamic = true)
+    walk.configure(baseValue = 1.0, configuredRange = 2.0, dynamic = true)
 
-    assertEquals(0.2, walk.next()!!, 1e-9)
-    repeat(20) {
-      assertTrue(abs(walk.next()!!) > 1e-9)
+    repeat(80) {
+      assertTrue(abs(walk.next()!!) >= 1.0 - 1e-9)
     }
   }
 
   @Test
-  fun negativeDynamicWalkNeverStepsToZero() {
+  fun negativeDynamicWalkKeepsOneSemitoneBufferFromZero() {
     val walk = DynamicEffectRandomWalk { true }
-    walk.configure(baseValue = -0.1, configuredRange = 0.3, dynamic = true)
+    walk.configure(baseValue = -1.0, configuredRange = 2.0, dynamic = true)
 
-    assertEquals(-0.2, walk.next()!!, 1e-9)
-    repeat(20) {
-      assertTrue(abs(walk.next()!!) > 1e-9)
+    repeat(80) {
+      assertTrue(abs(walk.next()!!) >= 1.0 - 1e-9)
     }
   }
 
   @Test
-  fun zeroBaseLeavesZeroOnFirstDynamicStepAndDoesNotReturn() {
-    val walk = DynamicEffectRandomWalk { true }
-    walk.configure(baseValue = 0.0, configuredRange = 0.2, dynamic = true)
+  fun dynamicBaseInsideBufferIsNormalizedToPositiveOne() {
+    val walk = DynamicEffectRandomWalk { false }
+    walk.configure(baseValue = 0.4, configuredRange = 0.3, dynamic = true)
 
-    assertEquals(0.0, walk.current(), 1e-9)
-    assertEquals(0.1, walk.next()!!, 1e-9)
-
-    repeat(20) {
-      assertTrue(abs(walk.next()!!) > 1e-9)
-    }
+    assertEquals(1.0, walk.current(), 1e-9)
+    assertEquals(1.1, walk.next()!!, 1e-9)
   }
 
   @Test
-  fun narrowZeroCenteredRangeKeepsLastNonZeroValue() {
+  fun negativeDynamicBaseInsideBufferIsNormalizedToNegativeOne() {
     val walk = DynamicEffectRandomWalk { true }
+    walk.configure(baseValue = -0.4, configuredRange = 0.3, dynamic = true)
+
+    assertEquals(-1.0, walk.current(), 1e-9)
+    assertEquals(-1.1, walk.next()!!, 1e-9)
+  }
+
+  @Test
+  fun zeroDynamicBaseIsNormalizedToPositiveOne() {
+    val walk = DynamicEffectRandomWalk { false }
     walk.configure(baseValue = 0.0, configuredRange = 0.1, dynamic = true)
 
-    assertEquals(0.1, walk.next()!!, 1e-9)
-    assertEquals(0.1, walk.next()!!, 1e-9)
+    assertEquals(1.0, walk.current(), 1e-9)
+    assertEquals(1.1, walk.next()!!, 1e-9)
+    assertEquals(1.0, walk.next()!!, 1e-9)
   }
 
   @Test
