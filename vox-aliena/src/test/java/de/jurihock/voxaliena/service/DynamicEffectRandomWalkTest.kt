@@ -5,6 +5,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlin.math.abs
 
 class DynamicEffectRandomWalkTest {
 
@@ -72,6 +73,50 @@ class DynamicEffectRandomWalkTest {
     assertFalse(walk.isEnabled)
     assertEquals(11.95, walk.current(), 1e-9)
     assertNull(walk.next())
+  }
+
+  @Test
+  fun positiveDynamicWalkNeverStepsToZero() {
+    val walk = DynamicEffectRandomWalk { false }
+    walk.configure(baseValue = 0.1, configuredRange = 0.3, dynamic = true)
+
+    assertEquals(0.2, walk.next()!!, 1e-9)
+    repeat(20) {
+      assertTrue(abs(walk.next()!!) > 1e-9)
+    }
+  }
+
+  @Test
+  fun negativeDynamicWalkNeverStepsToZero() {
+    val walk = DynamicEffectRandomWalk { true }
+    walk.configure(baseValue = -0.1, configuredRange = 0.3, dynamic = true)
+
+    assertEquals(-0.2, walk.next()!!, 1e-9)
+    repeat(20) {
+      assertTrue(abs(walk.next()!!) > 1e-9)
+    }
+  }
+
+  @Test
+  fun zeroBaseLeavesZeroOnFirstDynamicStepAndDoesNotReturn() {
+    val walk = DynamicEffectRandomWalk { true }
+    walk.configure(baseValue = 0.0, configuredRange = 0.2, dynamic = true)
+
+    assertEquals(0.0, walk.current(), 1e-9)
+    assertEquals(0.1, walk.next()!!, 1e-9)
+
+    repeat(20) {
+      assertTrue(abs(walk.next()!!) > 1e-9)
+    }
+  }
+
+  @Test
+  fun narrowZeroCenteredRangeKeepsLastNonZeroValue() {
+    val walk = DynamicEffectRandomWalk { true }
+    walk.configure(baseValue = 0.0, configuredRange = 0.1, dynamic = true)
+
+    assertEquals(0.1, walk.next()!!, 1e-9)
+    assertEquals(0.1, walk.next()!!, 1e-9)
   }
 
   @Test
