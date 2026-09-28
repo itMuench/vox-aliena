@@ -27,15 +27,15 @@ jobs:
 
     - name: Verify 16 KB native library alignment
       run: |
-        rm -rf /tmp/voicesmith-apk
-        mkdir -p /tmp/voicesmith-apk
-        unzip -q voicesmith/build/outputs/apk/release/voicesmith-release.apk 'lib/*/*.so' -d /tmp/voicesmith-apk
+        rm -rf /tmp/vox-aliena-apk
+        mkdir -p /tmp/vox-aliena-apk
+        unzip -q vox-aliena/build/outputs/apk/release/vox-aliena-release.apk 'lib/*/*.so' -d /tmp/vox-aliena-apk
         python3 - <<'PY'
         import pathlib
         import subprocess
         import sys
 
-        root = pathlib.Path("/tmp/voicesmith-apk/lib")
+        root = pathlib.Path("/tmp/vox-aliena-apk/lib")
         libraries = sorted(
             list(root.glob("arm64-v8a/*.so")) +
             list(root.glob("x86_64/*.so")))

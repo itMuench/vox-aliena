@@ -1,0 +1,241 @@
+package de.jurihock.voxaliena.ui
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
+import java.math.BigDecimal
+import kotlin.math.roundToInt
+
+@Composable
+fun EffectModeSwitchScreen(modifier: Modifier = Modifier,
+                           textSlider: String,
+                           textManual: String,
+                           manualMode: State<Boolean>,
+                           enabled: Boolean = true,
+                           onChange: (manual: Boolean) -> Unit) {
+
+  Row(
+    modifier = modifier.fillMaxWidth(),
+    horizontalArrangement = Arrangement.Center,
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Text(text = textSlider)
+    Spacer(modifier = Modifier.width(Dp(UI.PADDING)))
+    Switch(
+      checked = manualMode.value,
+      enabled = enabled,
+      onCheckedChange = onChange)
+    Spacer(modifier = Modifier.width(Dp(UI.PADDING)))
+    Text(text = textManual)
+  }
+}
+
+
+@Composable
+fun DynamicRangeScreen(modifier: Modifier = Modifier,
+                       name: String,
+                       unit: String,
+                       intervalName: String,
+                       intervalUnit: String,
+                       intervalRangeText: String,
+                       textStatic: String,
+                       textDynamic: String,
+                       allowedRangePrefix: String,
+                       unavailableText: String,
+                       dynamic: State<Boolean>,
+                       value: State<Double>,
+                       interval: State<Double>,
+                       maxRange: Double,
+                       minRange: Double = 0.1,
+                       onDynamicChange: (dynamic: Boolean) -> Unit,
+                       onRangeChange: (value: Double) -> Unit,
+                       onIntervalChange: (value: Double) -> Unit) {
+
+  val dynamicAvailable = maxRange >= minRange
+  val fieldEnabled = dynamic.value && dynamicAvailable
+
+  var text by remember(value.value) {
+    mutableStateOf(formatDecimal(value.value))
+  }
+  var intervalText by remember(interval.value) {
+    mutableStateOf(formatDecimal(interval.value))
+  }
+
+  val parsed = parseDecimal(text)
+  val isError = fieldEnabled &&
+    (parsed == null || parsed < minRange || parsed > maxRange)
+  val parsedInterval = parseDecimal(intervalText)
+  val intervalIsError = fieldEnabled &&
+    (parsedInterval == null || parsedInterval < 0.5 || parsedInterval > 5.0)
+
+  Column(modifier = modifier.fillMaxWidth()) {
+    Row(
+      modifier = Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.Center,
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Text(text = textStatic)
+      Spacer(modifier = Modifier.width(Dp(UI.PADDING)))
+      Switch(
+        checked = dynamic.value && dynamicAvailable,
+        enabled = dynamicAvailable,
+        onCheckedChange = onDynamicChange)
+      Spacer(modifier = Modifier.width(Dp(UI.PADDING)))
+      Text(text = textDynamic)
+    }
+
+    Spacer(modifier = Modifier.height(Dp(UI.PADDING)))
+
+    OutlinedTextField(
+      modifier = Modifier.fillMaxWidth(),
+      value = text,
+      onValueChange = { newText ->
+        text = newText
+        parseDecimal(newText)
+          ?.takeIf { it >= minRange && it <= maxRange }
+          ?.let { newValue ->
+            if (newValue != value.value) {
+              onRangeChange(newValue)
+            }
+          }
+      },
+      enabled = fieldEnabled,
+      singleLine = true,
+      isError = isError,
+      label = { Text(text = "${name} (${unit})") },
+      supportingText = {
+        Text(
+          text = if (dynamicAvailable) {
+            "${allowedRangePrefix} ${formatDecimal(maxRange)} ${unit}"
+          } else {
+            unavailableText
+          })
+      },
+      keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text))
+
+    Spacer(modifier = Modifier.height(Dp(UI.PADDING)))
+
+    OutlinedTextField(
+      modifier = Modifier.fillMaxWidth(),
+      value = intervalText,
+      onValueChange = { newText ->
+        intervalText = newText
+        parseDecimal(newText)
+          ?.takeIf { it in 0.5..5.0 }
+          ?.let { newValue ->
+            if (newValue != interval.value) {
+              onIntervalChange(newValue)
+            }
+          }
+      },
+      enabled = fieldEnabled,
+      singleLine = true,
+      isError = intervalIsError,
+      label = { Text(text = "${intervalName} (${intervalUnit})") },
+      supportingText = { Text(text = intervalRangeText) },
+      keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text))
+  }
+}
+
+@Composable
+fun SemitoneSliderScreen(modifier: Modifier = Modifier,
+                         name: String,
+                         unit: String,
+                         value: State<Double>,
+                         min: Int = -12,
+                         max: Int = 12,
+                         enabled: Boolean = true,
+                         onChange: (value: Double) -> Unit) {
+
+  val sliderValue = value.value.roundToInt().coerceIn(min, max)
+
+  Column(modifier = modifier.fillMaxWidth()) {
+    Text(
+      text = "${name} ${formatSigned(sliderValue)}${unit}",
+      modifier = Modifier.fillMaxWidth(),
+      textAlign = TextAlign.Center
+    )
+    Slider(
+      value = sliderValue.toFloat(),
+      valueRange = min.toFloat()..max.toFloat(),
+      steps = max - min - 1,
+      enabled = enabled,
+      onValueChange = {
+        val newValue = it.roundToInt().coerceIn(min, max).toDouble()
+        if (newValue != value.value) {
+          onChange(newValue)
+        }
+      })
+  }
+}
+
+@Composable
+fun ManualSemitoneScreen(modifier: Modifier = Modifier,
+                         name: String,
+                         unit: String,
+                         value: State<Double>,
+                         rangeText: String,
+                         min: Double = -12.0,
+                         max: Double = 12.0,
+                         enabled: Boolean = true,
+                         onChange: (value: Double) -> Unit) {
+
+  var text by remember(value.value) {
+    mutableStateOf(formatDecimal(value.value))
+  }
+
+  val parsed = parseDecimal(text)
+  val isError = parsed == null || parsed < min || parsed > max
+
+  OutlinedTextField(
+    modifier = modifier.fillMaxWidth(),
+    value = text,
+    onValueChange = { newText ->
+      text = newText
+      parseDecimal(newText)
+        ?.takeIf { it >= min && it <= max }
+        ?.let { newValue ->
+          if (newValue != value.value) {
+            onChange(newValue)
+          }
+        }
+    },
+    enabled = enabled,
+    singleLine = true,
+    isError = isError,
+    label = { Text(text = "${name} (${unit})") },
+    supportingText = { Text(text = rangeText) },
+    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text))
+}
+
+private fun parseDecimal(value: String): Double? {
+  return value.trim().replace(',', '.').toDoubleOrNull()
+}
+
+private fun formatDecimal(value: Double): String {
+  return BigDecimal.valueOf(value).stripTrailingZeros().toPlainString()
+}
+
+private fun formatSigned(value: Int): String {
+  return if (value > 0) "+${value}" else value.toString()
+}

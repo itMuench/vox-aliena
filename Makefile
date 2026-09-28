@@ -1,6 +1,6 @@
 .PHONY: help build clean dev pair log key props
 
-KEYDNA = CN=Juergen Hock, O=Voicesmith
+KEYDNA = CN=Juergen Hock, O=Vox-Aliena
 KEYARG = -keyalg RSA -keysize 2048 -validity 12345
 
 SDK = ~/Library/Android/sdk
@@ -33,10 +33,10 @@ pair:
 
 log:
 	@$(ADB) logcat -c
-	@$(ADB) logcat -v color voicesmith.java:D voicesmith.cpp:D *:S
+	@$(ADB) logcat -v color vox-aliena.java:D vox-aliena.cpp:D *:S
 
 key:
-	@keytool -genkeypair -keystore secret.keystore -alias github-jurihock-voicesmith -dname '$(KEYDNA)' $(KEYARG)
+	@keytool -genkeypair -keystore secret.keystore -alias github-jurihock-vox-aliena -dname '$(KEYDNA)' $(KEYARG)
 
 key-base64:
 	@base64 -i secret.keystore

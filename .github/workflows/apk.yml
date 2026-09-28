@@ -37,13 +37,13 @@ jobs:
 
     - name: Rename APK
       run: |
-        mv voicesmith/build/outputs/apk/release/voicesmith-release.apk voicesmith-latest.apk
+        mv vox-aliena/build/outputs/apk/release/vox-aliena-release.apk vox-aliena-latest.apk
 
     - name: Upload APK
       uses: actions/upload-artifact@master
       with:
-        name: voicesmith-latest-apk
-        path: voicesmith-latest.apk
+        name: vox-aliena-latest-apk
+        path: vox-aliena-latest.apk
 
   upload-release-apk:
 
@@ -58,16 +58,16 @@ jobs:
     - name: Download APK
       uses: actions/download-artifact@master
       with:
-        name: voicesmith-latest-apk
+        name: vox-aliena-latest-apk
         path: ${{ github.workspace }}
 
     - name: Rename APK
       run: |
-        mv voicesmith-latest.apk voicesmith-${{ github.event.release.tag_name }}.apk
+        mv vox-aliena-latest.apk vox-aliena-${{ github.event.release.tag_name }}.apk
 
     - name: Upload APK to GitHub release
       uses: softprops/action-gh-release@master
       with:
-        files: voicesmith-${{ github.event.release.tag_name }}.apk
+        files: vox-aliena-${{ github.event.release.tag_name }}.apk
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

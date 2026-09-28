@@ -20,5 +20,5 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Voicesmith"
-include("voicesmith")
+rootProject.name = "Vox-Aliena"
+include("vox-aliena")
